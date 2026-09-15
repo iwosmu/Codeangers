@@ -13,18 +13,22 @@ export async function record({browser,cache,files,prdPath,setup,description,orig
   await context.route('**/api/**',async route=>{
     const url=new URL(route.request().url())
     if(cache[url.pathname]) {
+      let checking='request body'
       try {
         const request=route.request()
         if(url.pathname.startsWith('/api/briefs/')) {
           const form=await new Response(request.postDataBuffer(),{headers:{'content-type':request.headers()['content-type']}}).formData()
           const input=JSON.parse(form.get('input'))
-          assert.deepEqual(input.setup,setup)
+          checking='product setup'; assert.deepEqual(input.setup,setup)
           if(url.pathname.endsWith('/team')) {
-            assert.deepEqual(input.members,files.map((_,i)=>({id:`m${i+1}`,label:'',text:''})))
-            for(const [i,file] of files.entries()) assert.deepEqual(Buffer.from(await form.get(`cv:m${i+1}`).arrayBuffer()),await fs.readFile(file))
+            checking='member roster'; assert.deepEqual(input.members,files.map((_,i)=>({id:`m${i+1}`,label:'',text:''})))
+            // Chromium omits file bytes from intercepted multipart postData.
+            // setInputFiles below loads the same source paths used by the live
+            // preparation; verify their member mapping and names on the wire.
+            for(const [i,file] of files.entries()) assert.equal(form.get(`cv:m${i+1}`).name,path.basename(file))
           } else {
-            assert.equal(input.project_text,description)
-            assert.deepEqual(Buffer.from(await form.get('project').arrayBuffer()),await fs.readFile(prdPath))
+            checking='project text'; assert.equal(input.project_text,description)
+            checking='project file'; assert.equal(form.get('project').name,path.basename(prdPath))
           }
         } else if(url.pathname==='/api/task-graph') {
           assert.deepEqual(request.postDataJSON(),{project_md:cache['/api/briefs/project'].data.markdown,team_md:team.markdown,team_size:files.length})
@@ -32,7 +36,7 @@ export async function record({browser,cache,files,prdPath,setup,description,orig
           assert.deepEqual(request.postDataJSON(),{team:team.structured,tasks:flow.tasks})
         }
       } catch {
-        errors.push('The browser request differed from the validated demo input.')
+        errors.push(`${url.pathname}: ${checking} differed from the validated demo input.`)
         await route.abort(); return
       }
       await new Promise(r=>setTimeout(r,delays[url.pathname]||0))
