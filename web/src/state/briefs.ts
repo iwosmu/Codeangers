@@ -1,7 +1,7 @@
 import { useGithub } from './github'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
-import type { BriefInputs, Output, ProjectBrief, TeamBrief, TaskGraphResult } from '../api/briefTypes'
+import type { BriefInputs, Output, ProjectBrief, TeamBrief, TaskGraphResult, AssignmentResult } from '../api/briefTypes'
 
 const empty = (): BriefInputs => ({ setup: { name: '', context: '', constraints: '' }, members: [1, 2].map(i => ({ id: `m${i}`, label: '', text: '' })), projectText: '', projectFiles: [] })
 export function useBriefs() {
@@ -10,13 +10,14 @@ export function useBriefs() {
   const [team, setTeam] = useState<Output<TeamBrief>>({ busy: false })
   const [project, setProject] = useState<Output<ProjectBrief>>({ busy: false })
   const [flow, setFlow] = useState<{ result?: TaskGraphResult; busy: boolean; error?: string }>({ busy: false })
-  const requests = useRef<Partial<Record<'team' | 'project' | 'flow', AbortController>>>({})
+  const [assignment, setAssignment] = useState<{ result?: AssignmentResult; busy: boolean; error?: string }>({ busy: false })
+  const requests = useRef<Partial<Record<'team' | 'project' | 'flow' | 'assignment', AbortController>>>({})
   useEffect(() => () => { Object.values(requests.current).forEach(c => c?.abort()) }, [])
-  const busy = team.busy || project.busy || flow.busy || github.busy
+  const busy = team.busy || project.busy || flow.busy || assignment.busy || github.busy
   function update(patch: Partial<BriefInputs>) {
     if (busy) return
     github.reset()
-    setFlow({ busy: false })
+    setFlow({ busy: false }); setAssignment({ busy: false })
     setInputs(current => ({ ...current, ...patch }))
     if (patch.setup || patch.members) setTeam({ busy: false })
     if (patch.setup || patch.projectText !== undefined || patch.projectFiles) setProject({ busy: false })
@@ -24,7 +25,7 @@ export function useBriefs() {
   async function generate(kind: 'team' | 'project') {
     if (busy || requests.current[kind] || requests.current.flow) return
     github.reset()
-    setFlow({ busy: false })
+    setFlow({ busy: false }); setAssignment({ busy: false })
     const controller = new AbortController()
     requests.current[kind] = controller
     const setOutput = kind === 'team' ? setTeam : setProject
@@ -46,21 +47,45 @@ export function useBriefs() {
     github.reset()
     const controller = new AbortController()
     requests.current.flow = controller
+    setAssignment({ busy: false })
     setFlow({ busy: true })
     try {
       const result = await api.taskGraph(project.document.markdown, team.document.markdown, team.document.structured.members.length, controller.signal)
-      if (!controller.signal.aborted) setFlow({ busy: false, result })
+      if (!controller.signal.aborted) {
+        setFlow({ busy: false, result })
+        await assign(result, team.document.structured)
+      }
     } catch (error) {
       if (!controller.signal.aborted) setFlow({ busy: false, error: error instanceof Error ? error.message : 'Task planning failed. Please retry.' })
     } finally { if (requests.current.flow === controller) delete requests.current.flow }
+  }
+  async function assign(graph: TaskGraphResult, profiles: TeamBrief) {
+    const controller = new AbortController()
+    github.invalidate()
+    requests.current.assignment = controller
+    setAssignment(current => ({ ...current, busy: true, error: undefined }))
+    try {
+      const result = await api.assignTasks(profiles, graph.tasks, controller.signal)
+      if (!controller.signal.aborted) {
+        setAssignment({ result, busy: false })
+        github.setOwners(result.owners)
+        github.invalidate()
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) setAssignment(current => ({ ...current, busy: false, error: error instanceof Error ? error.message : 'Assignment failed. Please retry.' }))
+    } finally { if (requests.current.assignment === controller) delete requests.current.assignment }
+  }
+  async function generateAssignments() {
+    if (busy || requests.current.assignment || github.started || !flow.result || !team.document) return
+    await assign(flow.result, team.document.structured)
   }
   function reset() {
     if (github.busy) return
     github.reset()
     Object.values(requests.current).forEach(c => c?.abort())
     requests.current = {}
-    setFlow({ busy: false }); setInputs(empty()); setTeam({ busy: false }); setProject({ busy: false })
+    setFlow({ busy: false }); setAssignment({ busy: false }); setInputs(empty()); setTeam({ busy: false }); setProject({ busy: false })
   }
-  return { github, inputs, update, team, project, flow, generate, generateFlow, busy, reset }
+  return { github, inputs, update, team, project, flow, assignment, generate, generateFlow, generateAssignments, busy, reset }
 }
 export type BriefSession = ReturnType<typeof useBriefs>

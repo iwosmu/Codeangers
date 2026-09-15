@@ -29,3 +29,23 @@ export interface TaskGraphResult {
   team_size: number; rounds: number; ms: number;
   validation: { ok: boolean; summary: string; errors: string[]; warnings: string[]; makespan_hours: number; total_person_hours: number; idle_person_hours: number; idle_fraction: number; idle_intervals: { start: number; end: number; idle_people: number }[] };
 }
+
+export interface SkillMatch {
+  member_id: string; match: 'direct' | 'adjacent' | 'unconfirmed';
+  matched_skills: string[]; missing_skills: string[]; evidence_ids: string[];
+  reason: string; learning_step: string;
+}
+export interface TaskFit {
+  task_id: number; required_skills: string[]; team_missing_skills: string[]; matches: SkillMatch[];
+}
+export interface AssignmentResult {
+  owners: Record<number, string[]>;
+  assignment: {
+    tasks: { task_id: number; task_name: string; assigned_to: string[] }[];
+    people: { member_id: string; name: string; task_ids: number[] }[];
+    notes: { task_id: number; name: string; note: string }[];
+    fit: TaskFit[];
+  };
+  validation: { ok: boolean; summary: string; warnings: string[]; makespan_hours: number; idle_fraction: number; schedule: Record<number, [number, number]> };
+  rounds: number; ms: number;
+}

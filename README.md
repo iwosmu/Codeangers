@@ -1,8 +1,6 @@
 # Codeangers — team planner
 
-Paste a project brief and five CVs, get sections, a task graph with dependencies,
-and a plan that keeps everyone unblocked at the same time. Gemini does the
-planning; the code only checks the result.
+Add project material and CVs for 2–8 people. Generate two evidence-backed Markdown briefs, a dependency graph, and suggested task owners. When a skill has no direct CV evidence, review a suggested contributor with related experience and a first learning step.
 
 ## Stack
 
@@ -42,18 +40,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 . With `MOCK_ONLY=true` (the default) every endpoint
-answers from `fixtures/`, so the whole app works before a single prompt exists.
-
-## Mock mode
-
-| How | Effect |
-|---|---|
-| `MOCK_ONLY=true` in `.env` | every endpoint answers from `fixtures/` |
-| header `x-mock: 1` on one request | that request answers from `fixtures/` |
-| `meta.mocked` in the response | tells the frontend which one it got |
-
-Frontend work never blocks on backend work. That is the point.
+Open http://localhost:5173. The current brief, graph and assignment endpoints use Gemini; they do not substitute mock responses. Set `GEMINI_API_KEY` (or `GEMINI_KEY`) in the repository's `.env.local`. Inputs and outputs stay in the browser/request session, with no application persistence.
 
 ## Who owns what
 
@@ -73,11 +60,13 @@ They must be edited together, in one commit, and announced out loud.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| `GET` | `/api/health` | — | `{ model, mockMode, commit }` |
-| `POST` | `/api/project` | `{ brief, horizonHours, teamSize }` | `ProjectModel` |
-| `POST` | `/api/cv` | multipart: `file` (pdf) or `text`, plus `name` | `PersonProfile` |
-| `POST` | `/api/tasks` | `{ project }` | `TaskGraph` |
-| `POST` | `/api/plan` | `{ project, people, graph, locks }` | `Plan` |
+| `GET` | `/api/health` | — | Connection/model status |
+| `POST` | `/api/briefs/project` | multipart project text/files and setup | Structured brief + `project.md` |
+| `POST` | `/api/briefs/team` | multipart CVs and setup | CV evidence + `team.md` |
+| `POST` | `/api/task-graph` | `{ project_md, team_md, team_size }` | Validated graph and flat tasks |
+| `POST` | `/api/task-assignments` | `{ team: TeamBrief, tasks }` | Owners by member ID, ordered task lists, skill fit, schedule validation |
+| `POST` | `/api/github/preview` | Reviewed repository, profiles, tasks; token header | Issue preview |
+| `POST` | `/api/github/export` | Same reviewed snapshot; token header | Parent issue and assigned sub-issues |
 
 Every response is an envelope:
 
@@ -103,19 +92,21 @@ one origin — no CORS, and no API URL baked into the bundle.
 That is a dead minute in front of judges. Before the pitch, open the site once and
 wait for it to answer, then leave the tab open. Do not find this out on stage.
 
-`MOCK_ONLY` starts as `true`, so the deployed app works from fixtures before any
-prompt exists. Flip it to `false` in the Render dashboard once `parse_project` and
-friends are real — no redeploy needed, just restart the service.
+## Assignment integration
 
-## Rules
+`api/app/task_assigner/` is integrated from `task-assigner` commit `6c86e81`; no other frontend or backend from that branch is imported. Its schedule simulator checks task coverage, headcounts, agreeing task/member views, dependency order and deadlocks. Application requests allow unavoidable idle capacity and report it rather than forcing unsupported skill matches.
 
-1. A drag in the UI never calls the model. Local edit + `validate.ts`, instant.
-   Only the **Re-plan** button calls `POST /api/plan`.
-2. `temperature=0` and cache every model response keyed on an input hash. The plan
-   you rehearsed must be the plan that appears on stage.
-3. One repair round when the validator finds errors, then give up and let the user
-   fix it by hand. Never loop.
-4. The Gemini key lives in `api/.env` only. Never in `web/`, never in a response, never in git.
+The graph appears first, then owner suggestions run automatically. Assignment can be retried independently. Suggested owners feed the existing editable owner controls and reviewed GitHub export; nothing is published automatically.
+
+- **Direct match:** evidence for all required skills.
+- **Closest skillset · learning needed:** relevant CV evidence, explicit missing skills and a concrete first learning step.
+- **Fit unconfirmed:** insufficient relevant evidence to rank learning fit; a proposed owner needs team confirmation.
+
+Task cards mark learning/review cases. The sidebar shows the reason, missing skills and original CV quotations. Assignment controls, task order, team-wide skill gaps and match explanations live in the selected-task sidebar; there is no separate assignment stage. Manual owner changes invalidate the displayed fit/schedule status; original suggestions remain available for comparison. Recalculating replaces owner suggestions. Duration assumes continuous availability and excludes learning time.
+
+Prompts: `api/app/task_assigner/prompts.py` (assignment and scheduling), `api/app/prompts/assignment_fit.md` (evidence and learning-gap policy). The model compares semantic skill fit; code verifies member/task IDs, evidence references and consistent fit labels, not the truth of every inference. Review citations with the team.
+
+No dependencies added. Model calls use the configured Gemini model, a 60-second timeout per attempt, and at most one repair in the application. Tests: `cd api && uv run pytest`; `npm --prefix web test`; `npm --prefix web run build`.
 
 ## Consolidated frontend design
 
