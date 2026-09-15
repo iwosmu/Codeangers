@@ -1,48 +1,23 @@
-// OWNER A. Shell and routing between the two screens.
+import { ArrowLeft, ArrowRight, Check, ClipboardCheck, Copy, Navigation } from 'lucide-react'
 import { useEffect, useState } from 'react'
-
 import { api } from '../api/client'
 import { Button } from '../components/ui'
+import { AssignmentScreen } from '../screens/assignment/AssignmentScreen'
 import { PlanScreen } from '../screens/plan/PlanScreen'
 import { SetupScreen } from '../screens/setup/SetupScreen'
 import { useAppState } from '../state/store'
 
+const steps = ['Project brief', 'Team & task flow', 'Assignments']
+
 export function App() {
   const { state, patch, reassign, locks, exportJson, importJson } = useAppState()
-  const [tab, setTab] = useState<'setup' | 'plan'>('setup')
-  const [mock, setMock] = useState<boolean | null>(null)
-
-  useEffect(() => { api.health().then(h => setMock(h.mockMode)).catch(() => setMock(null)) }, [])
-
-  return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: '28px 20px 64px', display: 'grid', gap: 18 }}>
-      <header style={{ display: 'flex', gap: 12, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <h1 style={{ margin: 0, fontSize: 24 }}>Codeangers</h1>
-        <span style={{ color: 'var(--ink-3)', fontSize: 14 }}>brief and CVs in, a plan out</span>
-        {mock && (
-          <span className="mono" style={{
-            marginLeft: 'auto', fontSize: 11, padding: '3px 8px', borderRadius: 3,
-            border: '1px solid var(--rule)', color: 'var(--ink-3)',
-          }}>
-            MOCK DATA
-          </span>
-        )}
-      </header>
-
-      <nav style={{ display: 'flex', gap: 8 }}>
-        <Button kind={tab === 'setup' ? 'primary' : 'ghost'} onClick={() => setTab('setup')}>Setup</Button>
-        <Button kind={tab === 'plan' ? 'primary' : 'ghost'} onClick={() => setTab('plan')}>Plan</Button>
-        <span style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-          <Button kind="ghost" onClick={() => navigator.clipboard.writeText(exportJson())}>Copy session</Button>
-          <Button kind="ghost" onClick={async () => importJson(await navigator.clipboard.readText())}>
-            Paste session
-          </Button>
-        </span>
-      </nav>
-
-      {tab === 'setup'
-        ? <SetupScreen state={state} patch={patch} />
-        : <PlanScreen state={state} patch={patch} reassign={reassign} locks={locks} />}
-    </div>
-  )
+  const [step, setStep] = useState(1); const [mock, setMock] = useState<boolean | null>(null)
+  useEffect(() => { api.health().then(result => setMock(result.mockMode)).catch(() => setMock(null)) }, [])
+  const canContinue = step === 1 ? Boolean(state.project) : step === 2 ? Boolean(state.plan) : true
+  const nextCopy = step === 1 ? 'Continue to task flow' : step === 2 ? 'Review assignments' : 'Plan is ready'
+  return <div className="app-shell taskpilot-shell"><a className="skip-link" href="#main-content">Skip to content</a><header className="app-header"><div className="brand-mark"><Navigation size={21} aria-hidden="true" /></div><div className="brand-copy"><h1>TaskPilot</h1><p>From project scope to clear ownership.</p></div>{mock && <span className="status"><span aria-hidden="true">●</span> Demo workspace</span>}</header>
+    <section className="wizard-progress" aria-label={`Step ${step} of 3`}><div><p className="eyebrow">Workflow</p><strong>Step {step} of 3</strong></div><ol>{steps.map((label, index) => { const number = index + 1; return <li key={label} className={number === step ? 'current' : number < step ? 'complete' : ''}><span>{number < step ? <Check size={14} aria-hidden="true" /> : number}</span><small>{label}</small></li> })}</ol><div className="wizard-tools"><Button kind="ghost" onClick={() => navigator.clipboard.writeText(exportJson())}><Copy size={15} aria-hidden="true" /> Copy</Button><Button kind="ghost" onClick={async () => importJson(await navigator.clipboard.readText())}><ClipboardCheck size={15} aria-hidden="true" /> Paste</Button></div></section>
+    {step === 1 && <SetupScreen state={state} patch={patch} onProjectReady={() => setStep(2)} />}{step === 2 && <PlanScreen state={state} patch={patch} locks={locks} />}{step === 3 && <AssignmentScreen state={state} reassign={reassign} />}
+    <footer className="wizard-actions"><div>{step > 1 && <Button kind="secondary" onClick={() => setStep(current => current - 1)}><ArrowLeft size={17} aria-hidden="true" /> Back</Button>}</div><div>{step < 3 ? <><span className="wizard-hint">{canContinue ? 'Your progress is saved in this session.' : step === 1 ? 'Enter your brief to start the next step.' : 'Generate the task plan to continue.'}</span><Button onClick={() => setStep(current => current + 1)} disabled={!canContinue}>{nextCopy} <ArrowRight size={17} aria-hidden="true" /></Button></> : <span className="wizard-finish"><Check size={17} aria-hidden="true" /> Human review complete</span>}</div></footer>
+  </div>
 }

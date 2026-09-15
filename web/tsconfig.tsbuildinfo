@@ -1,0 +1,1 @@
+{"root":["./src/main.tsx","./src/types.ts","./src/api/client.ts","./src/app/app.tsx","./src/components/timeline/timeline.tsx","./src/components/ui/index.tsx","./src/lib/validate.ts","./src/screens/assignment/assignmentscreen.tsx","./src/screens/plan/planscreen.tsx","./src/screens/setup/setupscreen.tsx","./src/state/store.ts"],"version":"5.9.3"}
