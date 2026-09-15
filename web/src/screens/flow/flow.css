@@ -151,3 +151,25 @@
 .flow-icon-button[aria-pressed="true"] { background:#e8e8e4; color:#111; }
 .flow-node:focus-visible { outline-color:#111; }
 @media(max-width:600px){.flow-heading h2{font-size:36px}.flow-summary{padding:14px}.flow-heading .button{width:100%}}
+
+/* Evidence-backed owner suggestions. Graph positions and dimensions stay fixed. */
+.assignment-details { margin-top: 14px; }
+.assignment-details > .button { width: 100%; font-size: 11px; }
+.assignment-details p { color: #686864; font-size: 12px; line-height: 1.65; }
+.assignment-explanation { margin-top: 14px; }
+.assignment-explanation summary { cursor: pointer; font-size: 11px; font-weight: 600; }
+.assignment-person { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid #eee; font-size: 13px; }
+.assignment-person button { border: 0; background: #f3f3ef; padding: 4px 7px; cursor: pointer; border-radius: 4px; }
+.flow-node-status { display: flex; align-items: center; gap: 7px; }
+.fit-node-label { font-size: 9px; text-transform: uppercase; font-weight: 700; color: #555; }
+.flow-node.needs-learning { border-style: dashed; }
+.flow-node.needs-learning.selected { border-style: solid; }
+.skill-fit-person { margin: 14px 0; padding-bottom: 14px; border-bottom: 1px solid #e8e8e3; }
+.skill-fit-person > div { display: grid; gap: 7px; }
+.skill-fit-person p, .fit-warning { font-size: 12px; line-height: 1.65; }
+.fit-badge { display: inline-block; width: fit-content; padding: 5px 7px; border-radius: 4px; background: #f0f0eb; color: #333; font-size: 10px; font-weight: 600; }
+.fit-adjacent .fit-badge, .fit-unconfirmed .fit-badge { border: 1px dashed #888; }
+.fit-warning { display: grid; gap: 5px; padding: 12px; background: #f5f5f0; border-left: 2px solid #555; }
+.skill-fit summary { cursor: pointer; font-size: 11px; }
+.skill-fit blockquote { margin: 12px 0; padding-left: 10px; border-left: 2px solid #ddd; font-size: 12px; line-height: 1.6; }
+.skill-fit blockquote footer { font-size: 10px; color: #777; margin-top: 8px; }

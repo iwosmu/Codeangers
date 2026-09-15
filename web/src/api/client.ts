@@ -1,6 +1,6 @@
 import type { ExportInput, ExportPreview, ExportResult } from './githubTypes'
 import type { ApiResult } from '../types'
-import type { BriefInputs, DocumentResult, ProjectBrief, TeamBrief, TaskGraphResult } from './briefTypes'
+import type { BriefInputs, DocumentResult, ProjectBrief, TeamBrief, TaskGraphResult, AssignmentResult } from './briefTypes'
 
 export class ApiFailure extends Error {
   constructor(public code: string, message: string, public retryable: boolean) { super(message) }
@@ -33,6 +33,7 @@ async function brief<T>(kind: 'team' | 'project', inputs: BriefInputs, signal?: 
 }
 
 export const api = {
+  assignTasks: (team: TeamBrief, tasks: TaskGraphResult['tasks'], signal?: AbortSignal) => call<AssignmentResult>('/task-assignments', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ team, tasks }), signal }),
   githubPreview: (input: ExportInput, token: string) => call<ExportPreview>('/github/preview', { method: 'POST', headers: { 'content-type': 'application/json', 'x-github-token': token }, body: JSON.stringify(input) }),
   githubExport: (input: ExportInput, token: string) => call<ExportResult>('/github/export', { method: 'POST', headers: { 'content-type': 'application/json', 'x-github-token': token }, body: JSON.stringify(input) }),
   taskGraph: (project_md: string, team_md: string, team_size: number, signal?: AbortSignal) => call<TaskGraphResult>('/task-graph', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ project_md, team_md, team_size }), signal }),

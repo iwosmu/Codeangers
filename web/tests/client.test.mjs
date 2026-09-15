@@ -95,3 +95,17 @@ await test('GitHub preview and export send the same reviewed data with a separat
   assert.equal((await api.githubExport(input, 'session-token')).complete, false)
   assert.deepEqual(paths, ['/api/github/preview', '/api/github/export'])
 })
+
+await test('assignment receives structured CV evidence and immutable tasks with cancellation', async t => {
+  const controller = new AbortController()
+  const team = { members: [{ id: 'm1', evidence: [{ id: 'e1', quote: 'Built React interfaces.' }] }] }
+  const tasks = [{ id: 7, people_needed: 1, prerequisites: [2] }]
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    assert.equal(url, '/api/task-assignments')
+    assert.deepEqual(JSON.parse(init.body), { team, tasks })
+    assert.equal(init.signal, controller.signal)
+    assert.equal(init.headers['x-github-token'], undefined)
+    return envelope({ owners: { 7: ['m1'] } })
+  })
+  assert.deepEqual((await api.assignTasks(team, tasks, controller.signal)).owners, { 7: ['m1'] })
+})
