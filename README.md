@@ -36,7 +36,7 @@ Open http://127.0.0.1:5173. Vite proxies `/api` to port 8000.
 1. **Project brief:** add text or attach a Markdown PRD, PDF, Office file, note image, or audio. Add shared setup and generate `project.md`. Attachments work without a textbox description.
 2. **Team overview:** choose 2–8 people, upload CVs individually or in a batch, or paste CV text. Generate `team.md`, or generate both documents concurrently.
 3. **Review & download:** inspect the coverage table and expand cells for source evidence. Read and download both Markdown documents. Each result appears independently as soon as it is ready.
-4. **Task flow:** generate a dependency graph from the current briefs. Explore the diagram or task list, select a task to see prerequisites and estimates, and review validation notes.
+4. **Task flow:** generate a dependency graph from the current briefs. Explore a downward or left-to-right diagram, drag to pan, fit the whole graph, or open focus mode. Search tasks, highlight direct connections, and inspect prerequisites and estimates in the detail panel. A filtered task list and validation notes remain available.
 
 The UI keeps TaskPilot's wizard and visual components. It uses real API results, reports failures, and does not substitute demo profiles. Input changes invalidate the affected document. Clear session removes in-memory inputs and outputs and cancels pending browser requests. No localStorage, sessionStorage, or application database is used for CVs/results.
 
