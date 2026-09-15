@@ -1,0 +1,46 @@
+# Render Blueprint. In Render: New -> Blueprint -> point it at this repo.
+# Both service names below appear in the URLs, so if you rename one, fix the
+# rewrite destination and CORS_ORIGINS to match.
+
+services:
+  # ---------------------------------------------------------------- API
+  - type: web
+    name: codeangers-api
+    runtime: python
+    plan: free
+    rootDir: api
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.6"
+      # Leave true until the prompts exist; the deployed app then works from fixtures.
+      - key: MOCK_ONLY
+        value: "true"
+      # Only needed if the browser ever calls the API directly instead of through
+      # the static site's /api rewrite.
+      - key: CORS_ORIGINS
+        value: https://codeangers-web.onrender.com
+      # sync:false = Render asks for it once and never stores it in git.
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # ------------------------------------------------------------ frontend
+  - type: web
+    name: codeangers-web
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      # Same-origin proxy: the browser only ever talks to codeangers-web, so
+      # there is no CORS and no API URL baked into the bundle. This rule must
+      # come before the SPA fallback below.
+      - type: rewrite
+        source: /api/*
+        destination: https://codeangers-api.onrender.com/api/*
+      # SPA fallback: every other path serves index.html.
+      - type: rewrite
+        source: /*
+        destination: /index.html

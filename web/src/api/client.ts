@@ -1,42 +1,60 @@
-import type { ExportInput, ExportPreview, ExportResult } from './githubTypes'
-import type { ApiResult } from '../types'
-import type { BriefInputs, DocumentResult, ProjectBrief, TeamBrief, TaskGraphResult } from './briefTypes'
+// OWNER A. The only file that knows fetch exists.
+import type {
+  ApiResult, AppState, Assignment, PersonProfile, Plan, ProjectModel, TaskGraph,
+} from '../types'
+
+// Flip to true to develop against fixtures even when the API has real prompts.
+export const FORCE_MOCK = false
+
+// Empty by default: in dev the Vite proxy forwards /api, and on Render the static
+// site rewrites /api to the API service -- both same-origin, so no CORS anywhere.
+// Set VITE_API_BASE only if the two halves ever live on different origins.
+const BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '')
 
 export class ApiFailure extends Error {
-  constructor(public code: string, message: string, public retryable: boolean) { super(message) }
+  constructor(public code: string, message: string, public retryable: boolean) {
+    super(message)
+  }
 }
 
-async function call<T>(path: string, init: RequestInit): Promise<T> {
-  let res: Response
-  try { res = await fetch('/api' + path, init) }
-  catch { throw new ApiFailure('network', 'Cannot reach the API. Check the connection and retry.', true) }
-  if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-    throw new ApiFailure('unavailable', 'The API is unavailable. Check that the backend is running.', true)
-  }
-  const body = await res.json() as ApiResult<T>
+async function call<T>(path: string, init: RequestInit): Promise<Ok<T>['data']> {
+  const headers = new Headers(init.headers)
+  if (FORCE_MOCK) headers.set('x-mock', '1')
+
+  const res = await fetch(BASE + '/api' + path, { ...init, headers })
+  const body = (await res.json()) as ApiResult<T>
+
   if (!body.ok) throw new ApiFailure(body.error.code, body.error.message, body.error.retryable)
-  if (!res.ok) throw new ApiFailure('unavailable', 'The API could not complete this request.', true)
+  if (body.warnings.length) console.warn(path, body.warnings)
   return body.data
 }
 
-async function brief<T>(kind: 'team' | 'project', inputs: BriefInputs, signal?: AbortSignal): Promise<DocumentResult<T>> {
-  const form = new FormData()
-  const input = kind === 'team'
-    ? { setup: inputs.setup, members: inputs.members.map(({ id, label, text }) => ({ id, label, text })) }
-    : { setup: inputs.setup, project_text: inputs.projectText }
-  form.append('input', JSON.stringify(input))
-  if (kind === 'team') inputs.members.forEach(m => { if (m.file) form.append(`cv:${m.id}`, m.file) })
-  else inputs.projectFiles.forEach(file => form.append('project', file))
-  const result = await call<DocumentResult<T> | { error: { code: string; message: string; retryable: boolean }; warnings: string[] }>(`/briefs/${kind}`, { method: 'POST', body: form, signal })
-  if ('error' in result) throw new ApiFailure(result.error.code, [result.error.message, ...result.warnings].join(' '), result.error.retryable)
-  return result
-}
+type Ok<T> = Extract<ApiResult<T>, { ok: true }>
+
+const json = (body: unknown): RequestInit => ({
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(body),
+})
 
 export const api = {
-  githubPreview: (input: ExportInput, token: string) => call<ExportPreview>('/github/preview', { method: 'POST', headers: { 'content-type': 'application/json', 'x-github-token': token }, body: JSON.stringify(input) }),
-  githubExport: (input: ExportInput, token: string) => call<ExportResult>('/github/export', { method: 'POST', headers: { 'content-type': 'application/json', 'x-github-token': token }, body: JSON.stringify(input) }),
-  taskGraph: (project_md: string, team_md: string, team_size: number, signal?: AbortSignal) => call<TaskGraphResult>('/task-graph', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ project_md, team_md, team_size }), signal }),
   health: () => call<{ mockMode: boolean; hasKey: boolean }>('/health', { method: 'GET' }),
-  team: (inputs: BriefInputs, signal?: AbortSignal) => brief<TeamBrief>('team', inputs, signal),
-  project: (inputs: BriefInputs, signal?: AbortSignal) => brief<ProjectBrief>('project', inputs, signal),
+
+  project: (brief: string, horizonHours = 24, teamSize = 5) =>
+    call<ProjectModel>('/project', json({ brief, horizonHours, teamSize })),
+
+  cv: (input: { name?: string; text?: string; file?: File }) => {
+    const form = new FormData()
+    if (input.name) form.append('name', input.name)
+    if (input.text) form.append('text', input.text)
+    if (input.file) form.append('file', input.file)
+    return call<PersonProfile>('/cv', { method: 'POST', body: form })
+  },
+
+  tasks: (project: ProjectModel) => call<TaskGraph>('/tasks', json({ project })),
+
+  // The slow one: 20-40 s. Only ever called from an explicit Re-plan click.
+  plan: (s: Required<Pick<AppState, 'project' | 'graph'>> & { people: PersonProfile[] },
+         locks: Assignment[] = []) =>
+    call<Plan>('/plan', json({ project: s.project, people: s.people, graph: s.graph, locks })),
 }
