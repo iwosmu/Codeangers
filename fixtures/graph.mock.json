@@ -1,0 +1,149 @@
+{
+  "tasks": [
+    {
+      "id": "t1",
+      "title": "Freeze shared types and fixtures",
+      "sectionId": "api",
+      "blocks": 1,
+      "kind": "contract",
+      "dependsOn": []
+    },
+    {
+      "id": "t11",
+      "title": "Agree /plan response shape",
+      "sectionId": "api",
+      "blocks": 1,
+      "kind": "contract",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t2",
+      "title": "Mock API endpoints",
+      "sectionId": "api",
+      "blocks": 2,
+      "kind": "impl",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t3",
+      "title": "Gemini client wrapper",
+      "sectionId": "api",
+      "blocks": 2,
+      "kind": "impl",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t14",
+      "title": "Deploy and key proxy",
+      "sectionId": "api",
+      "blocks": 2,
+      "kind": "impl",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t4",
+      "title": "Brief to ProjectModel prompt",
+      "sectionId": "ai-intake",
+      "blocks": 4,
+      "kind": "impl",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t5",
+      "title": "CV to PersonProfile prompt",
+      "sectionId": "ai-intake",
+      "blocks": 4,
+      "kind": "impl",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t6",
+      "title": "Task graph prompt and validator",
+      "sectionId": "ai-planning",
+      "blocks": 4,
+      "kind": "impl",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t7",
+      "title": "Planning prompt: sections, assignment, schedule",
+      "sectionId": "ai-planning",
+      "blocks": 4,
+      "kind": "impl",
+      "dependsOn": [
+        "t6"
+      ]
+    },
+    {
+      "id": "t8",
+      "title": "UI kit and app shell",
+      "sectionId": "frontend",
+      "blocks": 2,
+      "kind": "impl",
+      "dependsOn": [
+        "t1"
+      ]
+    },
+    {
+      "id": "t9",
+      "title": "Setup and CV screens",
+      "sectionId": "frontend",
+      "blocks": 4,
+      "kind": "impl",
+      "dependsOn": [
+        "t8",
+        "t2"
+      ]
+    },
+    {
+      "id": "t10",
+      "title": "Timeline and assignment board",
+      "sectionId": "frontend",
+      "blocks": 4,
+      "kind": "impl",
+      "dependsOn": [
+        "t8",
+        "t2"
+      ]
+    },
+    {
+      "id": "t12",
+      "title": "Mount AI modules behind endpoints",
+      "sectionId": "api",
+      "blocks": 2,
+      "kind": "integration",
+      "dependsOn": [
+        "t3",
+        "t4",
+        "t5",
+        "t7"
+      ]
+    },
+    {
+      "id": "t13",
+      "title": "End-to-end run on real data",
+      "sectionId": "api",
+      "blocks": 2,
+      "kind": "integration",
+      "dependsOn": [
+        "t12",
+        "t9",
+        "t10"
+      ]
+    }
+  ]
+}

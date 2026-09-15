@@ -1,0 +1,61 @@
+{
+  "goal": "A tool that turns a project brief and a pile of CVs into a plan five people can execute in parallel.",
+  "deliverables": [
+    "Working web app",
+    "Live demo",
+    "3-minute pitch"
+  ],
+  "stack": [
+    "FastAPI",
+    "TypeScript",
+    "React",
+    "Gemini API"
+  ],
+  "horizonBlocks": 48,
+  "sections": [
+    {
+      "id": "ai-intake",
+      "name": "AI intake",
+      "description": "Brief and CVs into structured data via Gemini.",
+      "needs": [
+        "ml",
+        "backend"
+      ],
+      "minPeople": 1,
+      "maxPeople": 2
+    },
+    {
+      "id": "ai-planning",
+      "name": "AI planning",
+      "description": "Task graph and the assignment plan via Gemini.",
+      "needs": [
+        "ml",
+        "domain"
+      ],
+      "minPeople": 1,
+      "maxPeople": 2
+    },
+    {
+      "id": "api",
+      "name": "API backend",
+      "description": "FastAPI service, mock mode, caching, deploy.",
+      "needs": [
+        "backend",
+        "devops"
+      ],
+      "minPeople": 1,
+      "maxPeople": 2
+    },
+    {
+      "id": "frontend",
+      "name": "Frontend",
+      "description": "Wizard, editors, timeline and assignment board.",
+      "needs": [
+        "frontend",
+        "design"
+      ],
+      "minPeople": 2,
+      "maxPeople": 3
+    }
+  ]
+}

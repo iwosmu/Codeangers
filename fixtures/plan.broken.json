@@ -1,0 +1,118 @@
+{
+  "sectionOf": {
+    "p1": "ai-intake",
+    "p2": "ai-planning",
+    "p3": "api",
+    "p4": "frontend",
+    "p5": "frontend"
+  },
+  "rationale": {
+    "p1": "Level 4 on the Gemini API with a shipped RAG pipeline; intake is two structured-output calls.",
+    "p2": "Wrote a timetable optimiser, so the scheduling prompt is the closest thing here to work already done.",
+    "p3": "Level 5 on FastAPI and owns deployment elsewhere; the backend is one person's job if it is hers.",
+    "p4": "Level 4 React and TypeScript plus design; takes the shell so the other frontend lane has components on day one.",
+    "p5": "Data-visualisation background maps onto the timeline, and level 4 presenting makes her the pitch owner."
+  },
+  "assignments": [
+    {
+      "taskId": "t1",
+      "personId": "p3",
+      "startBlock": 0,
+      "endBlock": 1,
+      "locked": false
+    },
+    {
+      "taskId": "t11",
+      "personId": "p3",
+      "startBlock": 1,
+      "endBlock": 2,
+      "locked": false
+    },
+    {
+      "taskId": "t2",
+      "personId": "p3",
+      "startBlock": 2,
+      "endBlock": 4,
+      "locked": false
+    },
+    {
+      "taskId": "t3",
+      "personId": "p3",
+      "startBlock": 4,
+      "endBlock": 6,
+      "locked": false
+    },
+    {
+      "taskId": "t14",
+      "personId": "p3",
+      "startBlock": 6,
+      "endBlock": 8,
+      "locked": false
+    },
+    {
+      "taskId": "t12",
+      "personId": "p3",
+      "startBlock": 10,
+      "endBlock": 12,
+      "locked": false
+    },
+    {
+      "taskId": "t13",
+      "personId": "p3",
+      "startBlock": 12,
+      "endBlock": 14,
+      "locked": false
+    },
+    {
+      "taskId": "t4",
+      "personId": "p1",
+      "startBlock": 2,
+      "endBlock": 6,
+      "locked": false
+    },
+    {
+      "taskId": "t5",
+      "personId": "p1",
+      "startBlock": 6,
+      "endBlock": 10,
+      "locked": false
+    },
+    {
+      "taskId": "t6",
+      "personId": "p2",
+      "startBlock": 2,
+      "endBlock": 6,
+      "locked": false
+    },
+    {
+      "taskId": "t7",
+      "personId": "p2",
+      "startBlock": 2,
+      "endBlock": 6,
+      "locked": false
+    },
+    {
+      "taskId": "t8",
+      "personId": "p4",
+      "startBlock": 2,
+      "endBlock": 4,
+      "locked": false
+    },
+    {
+      "taskId": "t9",
+      "personId": "p4",
+      "startBlock": 4,
+      "endBlock": 8,
+      "locked": false
+    },
+    {
+      "taskId": "t10",
+      "personId": "p4",
+      "startBlock": 4,
+      "endBlock": 8,
+      "locked": false
+    }
+  ],
+  "risks": [],
+  "issues": []
+}

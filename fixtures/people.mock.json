@@ -1,0 +1,126 @@
+{
+  "people": [
+    {
+      "id": "p1",
+      "name": "Ala",
+      "source": "cv",
+      "prefers": [
+        "ml"
+      ],
+      "avoids": [],
+      "skills": [
+        {
+          "category": "ml",
+          "label": "Gemini API",
+          "level": 4,
+          "evidence": "Built a RAG pipeline on the Gemini API for my thesis project."
+        },
+        {
+          "category": "backend",
+          "label": "Python",
+          "level": 4,
+          "evidence": "Three years of Python, two of them professionally."
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "name": "Bartek",
+      "source": "cv",
+      "prefers": [
+        "domain",
+        "ml"
+      ],
+      "avoids": [
+        "design"
+      ],
+      "skills": [
+        {
+          "category": "ml",
+          "label": "Prompt engineering",
+          "level": 3,
+          "evidence": "Shipped an LLM classification service at an internship."
+        },
+        {
+          "category": "domain",
+          "label": "Scheduling",
+          "level": 3,
+          "evidence": "Wrote a timetable optimiser for the student council."
+        }
+      ]
+    },
+    {
+      "id": "p3",
+      "name": "Celina",
+      "source": "cv",
+      "prefers": [
+        "backend",
+        "devops"
+      ],
+      "avoids": [],
+      "skills": [
+        {
+          "category": "backend",
+          "label": "FastAPI",
+          "level": 5,
+          "evidence": "Maintain two FastAPI services in production."
+        },
+        {
+          "category": "devops",
+          "label": "Docker, Cloud Run",
+          "level": 4,
+          "evidence": "Set up CI/CD and deployment for my team alone."
+        }
+      ]
+    },
+    {
+      "id": "p4",
+      "name": "Dawid",
+      "source": "cv",
+      "prefers": [
+        "frontend"
+      ],
+      "avoids": [
+        "devops"
+      ],
+      "skills": [
+        {
+          "category": "frontend",
+          "label": "React, TypeScript",
+          "level": 4,
+          "evidence": "Rebuilt the faculty club website in React and TypeScript."
+        },
+        {
+          "category": "design",
+          "label": "Figma",
+          "level": 3,
+          "evidence": "Designed the club site myself before building it."
+        }
+      ]
+    },
+    {
+      "id": "p5",
+      "name": "Ewa",
+      "source": "cv",
+      "prefers": [
+        "frontend",
+        "pitch"
+      ],
+      "avoids": [],
+      "skills": [
+        {
+          "category": "frontend",
+          "label": "D3, data viz",
+          "level": 3,
+          "evidence": "Built interactive charts for a research group."
+        },
+        {
+          "category": "pitch",
+          "label": "Presenting",
+          "level": 4,
+          "evidence": "Presented at two student conferences."
+        }
+      ]
+    }
+  ]
+}

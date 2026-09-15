@@ -1,1 +1,86 @@
-hi guys
+# Codeangers — team planner
+
+Paste a project brief and five CVs, get sections, a task graph with dependencies,
+and a plan that keeps everyone unblocked at the same time. Gemini does the
+planning; the code only checks the result.
+
+## Stack
+
+- `api/` — FastAPI + Pydantic v2, Gemini via `google-genai`
+- `web/` — Vite + React + TypeScript
+- `fixtures/` — the mock data every part of the system develops against
+
+## Run it
+
+Two terminals.
+
+```bash
+# terminal 1 — API on :8000
+cd api
+python -m venv .venv
+.venv\Scripts\activate          # Windows;  source .venv/bin/activate on mac/linux
+pip install -r requirements.txt
+copy ..\.env.example ..\.env    # then put your key in it
+uvicorn app.main:app --reload --port 8000
+```
+
+```bash
+# terminal 2 — web on :5173, proxies /api to :8000
+cd web
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 . With `MOCK_ONLY=true` (the default) every endpoint
+answers from `fixtures/`, so the whole app works before a single prompt exists.
+
+## Mock mode
+
+| How | Effect |
+|---|---|
+| `MOCK_ONLY=true` in `.env` | every endpoint answers from `fixtures/` |
+| header `x-mock: 1` on one request | that request answers from `fixtures/` |
+| `meta.mocked` in the response | tells the frontend which one it got |
+
+Frontend work never blocks on backend work. That is the point.
+
+## Who owns what
+
+| | Lane | Paths |
+|---|---|---|
+| **A** | frontend — shell | `web/src/app/**`, `web/src/screens/setup/**`, `web/src/api/**`, `web/src/components/ui/**` |
+| **B** | frontend — plan | `web/src/screens/plan/**`, `web/src/components/timeline/**` |
+| **C** | project setup + planning | `api/app/services/ai_project.py`, `api/app/services/ai_plan.py` |
+| **D** | CV + task graph + validation | `api/app/services/ai_cv.py`, `api/app/services/ai_tasks.py`, `api/app/services/validate.py`, `web/src/lib/validate.ts` |
+| **E** | API backend | `api/app/main.py`, `api/app/routers/**`, `api/app/envelope.py`, `api/app/config.py`, deploy |
+| — | **shared** | `api/app/schemas.py`, `web/src/types.ts`, `fixtures/*.json` — announce before changing |
+
+`api/app/schemas.py` and `web/src/types.ts` are the same contract in two languages.
+They must be edited together, in one commit, and announced out loud.
+
+## API
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| `GET` | `/api/health` | — | `{ model, mockMode, commit }` |
+| `POST` | `/api/project` | `{ brief, horizonHours, teamSize }` | `ProjectModel` |
+| `POST` | `/api/cv` | multipart: `file` (pdf) or `text`, plus `name` | `PersonProfile` |
+| `POST` | `/api/tasks` | `{ project }` | `TaskGraph` |
+| `POST` | `/api/plan` | `{ project, people, graph, locks }` | `Plan` |
+
+Every response is an envelope:
+
+```json
+{ "ok": true,  "data": {}, "warnings": [], "meta": { "ms": 12, "mocked": true, "cacheHit": false } }
+{ "ok": false, "error": { "code": "rate_limited", "message": "...", "retryable": true } }
+```
+
+## Rules
+
+1. A drag in the UI never calls the model. Local edit + `validate.ts`, instant.
+   Only the **Re-plan** button calls `POST /api/plan`.
+2. `temperature=0` and cache every model response keyed on an input hash. The plan
+   you rehearsed must be the plan that appears on stage.
+3. One repair round when the validator finds errors, then give up and let the user
+   fix it by hand. Never loop.
+4. The Gemini key lives in `api/.env` only. Never in `web/`, never in a response, never in git.
