@@ -1,97 +1,18 @@
-// OWNER B. Stages 3-4: the task graph, the plan, the timeline, the warnings.
-//
-// The rule that makes a 30-second model call usable: a drag is a local edit plus
-// validate.ts. Only the Re-plan button calls the API, and it always sends the
-// locked assignments so human decisions survive.
-import { useState } from 'react'
-
+import { FileText, GitBranch, Info, Upload, Users } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { api, ApiFailure } from '../../api/client'
 import { Button, Card, Warnings } from '../../components/ui'
-import { parallelismScore } from '../../lib/validate'
-import { Timeline } from '../../components/timeline/Timeline'
 import type { AppState, Assignment, Warning } from '../../types'
 
-export function PlanScreen({ state, patch, reassign, locks }: {
-  state: AppState
-  patch: (p: Partial<AppState>) => void
-  reassign: (taskId: string, personId: string) => void
-  locks: () => Assignment[]
-}) {
-  const [busy, setBusy] = useState<'tasks' | 'plan' | null>(null)
-  const [error, setError] = useState<Warning[]>([])
-
+export function PlanScreen({ state, patch, locks }: { state: AppState; patch: (p: Partial<AppState>) => void; locks: () => Assignment[] }) {
+  const [busy, setBusy] = useState<'tasks' | 'plan' | null>(null); const [uploading, setUploading] = useState(false); const [error, setError] = useState<Warning[]>([]); const inputRef = useRef<HTMLInputElement>(null)
   const ready = Boolean(state.project && state.people.length)
-
-  async function generateTasks() {
-    if (!state.project) return
-    setBusy('tasks'); setError([])
-    try { patch({ graph: await api.tasks(state.project) }) }
-    catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) }
-    finally { setBusy(null) }
-  }
-
-  async function replan() {
-    if (!state.project || !state.graph) return
-    setBusy('plan'); setError([])
-    try {
-      patch({ plan: await api.plan(
-        { project: state.project, graph: state.graph, people: state.people }, locks()) })
-    } catch (e) {
-      const f = e as ApiFailure
-      setError([{ code: f.code, severity: 'error', message: f.message }])
-    } finally { setBusy(null) }
-  }
-
-  const score = state.plan ? parallelismScore(state.people, state.plan) : null
-
-  return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <Card title="3 — Task graph"
-            right={state.graph && <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-              {state.graph.tasks.length} tasks
-            </span>}>
-        <Button onClick={generateTasks} disabled={!ready || busy !== null}>
-          {busy === 'tasks' ? 'Writing tasks…' : 'Generate tasks'}
-        </Button>
-        {/* TODO B: editable task list — title, blocks, section, dependencies. */}
-      </Card>
-
-      <Card
-        title="4 — Plan"
-        right={score !== null && (
-          <span className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-            parallelism {score.toFixed(2)}
-          </span>
-        )}
-      >
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button onClick={replan} disabled={!state.graph || busy !== null}>
-            {busy === 'plan' ? 'Planning… (20–40 s)' : state.plan ? 'Re-plan' : 'Generate plan'}
-          </Button>
-          {locks().length > 0 && (
-            <span style={{ fontSize: 13, color: 'var(--ink-2)', alignSelf: 'center' }}>
-              {locks().length} assignment(s) locked by hand — these are kept.
-            </span>
-          )}
-        </div>
-
-        <Warnings items={error} />
-
-        {state.plan && (
-          <>
-            <Timeline state={state} onReassign={reassign} />
-            {/* The model's own reasoning. Free here, expensive with a solver — show it. */}
-            <div style={{ display: 'grid', gap: 6 }}>
-              {state.people.map(p => state.plan?.rationale[p.id] && (
-                <div key={p.id} style={{ fontSize: 14, color: 'var(--ink-2)' }}>
-                  <strong style={{ color: 'var(--ink)' }}>{p.name}</strong> — {state.plan.rationale[p.id]}
-                </div>
-              ))}
-            </div>
-            <Warnings items={[...(state.plan.issues ?? []), ...(state.plan.risks ?? [])]} />
-          </>
-        )}
-      </Card>
-    </div>
-  )
+  async function generateTasks() { if (!state.project) return; setBusy('tasks'); setError([]); try { patch({ graph: await api.tasks(state.project) }) } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setBusy(null) } }
+  async function generatePlan() { if (!state.project || !state.graph) return; setBusy('plan'); setError([]); try { patch({ plan: await api.plan({ project: state.project, graph: state.graph, people: state.people }, locks()) }) } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setBusy(null) } }
+  async function upload(file?: File) { if (!file) return; setUploading(true); setError([]); try { const person = await api.cv({ file, name: file.name.replace(/\.[^.]+$/, '') }); patch({ people: [...state.people, person] }) } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setUploading(false); if (inputRef.current) inputRef.current.value = '' } }
+  const sectionName = (id: string) => state.project?.sections.find(s => s.id === id)?.name ?? id
+  return <main id="main-content" className="screen screen-flow"><div className="screen-heading"><div><p className="eyebrow">02 · Task flow</p><h2>See what can happen in parallel.</h2><p>Generate a dependency-aware task graph, then create a plan only when the team is ready.</p></div></div>
+    <div className="stack"><Card title="Build the team" right={<span className="pill"><Users size={13} aria-hidden="true" /> {state.people.length} added</span>}><div className="dropzone"><Upload size={22} color="var(--accent)" aria-hidden="true" /><p className="dropzone-title">Add a teammate’s CV</p><p className="dropzone-text">Upload one PDF at a time. Then generate the task flow below.</p><input ref={inputRef} id="cv-file" type="file" accept="application/pdf,.pdf" hidden onChange={e => upload(e.target.files?.[0])} /><label className="button button-secondary" htmlFor="cv-file" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><FileText size={16} aria-hidden="true" />{uploading ? 'Reading CV…' : 'Choose PDF'}</label></div><div className="grid-three" style={{ marginTop: 14 }}>{state.people.map(person => <article className="person-card" key={person.id}><div className="person-top"><div className="avatar">{person.name.slice(0, 1).toUpperCase()}</div><div><strong>{person.name}</strong><div className="subtle">{person.source === 'cv' ? 'CV analysed' : 'Added manually'}</div></div></div><div className="skill-tags">{person.skills.slice(0, 3).map(skill => <span className="skill-tag" key={skill.label}>{skill.label} · {skill.level}/5</span>)}</div></article>)}</div></Card><Card title="Generate the work map" right={state.graph && <span className="pill">{state.graph.tasks.length} tasks</span>}><div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}><div><strong>Task graph</strong><p className="subtle" style={{ margin: '3px 0 0' }}>Dependencies are shown below each task. Tasks without predecessors can start together.</p></div><Button onClick={generateTasks} disabled={!ready || busy !== null}>{busy === 'tasks' ? 'Generating tasks…' : 'Generate task flow'}</Button></div>{!ready && <div className="notice" style={{ marginTop: 14 }}><Info size={17} aria-hidden="true" />Add at least one team member here before generating tasks.</div>}</Card>
+      {state.graph ? <Card title="Dependency map" right={<span className="subtle"><GitBranch size={14} aria-hidden="true" style={{ verticalAlign: 'middle' }} /> parallel-ready view</span>}><div className="task-grid">{state.graph.tasks.map(task => <article className={`task-card ${task.kind}`} key={task.id}><div className="task-meta"><span className="pill">{sectionName(task.sectionId)}</span><span>{task.blocks * 30} min</span></div><h4>{task.title}</h4><div className="task-meta"><span>{task.kind}</span><span className="mono">{task.id}</span></div><div className="dependency">{task.dependsOn.length ? <>Waits for: <strong>{task.dependsOn.join(', ')}</strong></> : <span style={{ color: 'var(--success)' }}>Can start immediately</span>}</div></article>)}</div></Card> : <div className="empty"><div><GitBranch size={28} aria-hidden="true" /><strong style={{ display: 'block' }}>Your task flow will appear here</strong><span className="subtle">Generate tasks to see dependencies and parallel work.</span></div></div>}
+      <Card title="Create the assignment plan" right={state.plan && <span className="pill">Plan ready</span>}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}><div><strong>Human decisions stay protected.</strong><p className="subtle" style={{ margin: '3px 0 0' }}>{locks().length ? `${locks().length} manually locked assignment(s) will be preserved.` : state.people.length ? 'Manual changes made on the assignment screen are kept on re-plan.' : 'Add at least one CV before creating an assignment plan.'}</p></div><Button onClick={generatePlan} disabled={!state.graph || !state.people.length || busy !== null}>{busy === 'plan' ? 'Planning…' : state.plan ? 'Re-plan with locks' : 'Generate plan'}</Button></div></Card><Warnings items={error} /></div></main>
 }
