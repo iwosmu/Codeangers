@@ -49,6 +49,12 @@ export async function record({browser,cache,files,prdPath,setup,description,orig
   await page.addInitScript(()=>{
     addEventListener('DOMContentLoaded',()=>{
       document.documentElement.style.zoom='2'
+      // Presenter-only framing requested for the video. Keep skill gaps and
+      // CV evidence visible; omit technical diagnostic panels, not errors.
+      const hideDiagnostics=()=>document.querySelectorAll('details').forEach(detail=>{
+        if(detail.classList.contains('flow-checks') || /^Review notes \(/.test(detail.querySelector('summary')?.textContent || '')) detail.style.display='none'
+      })
+      new MutationObserver(hideDiagnostics).observe(document.body,{childList:true,subtree:true})
       const pointer=document.createElement('div')
       pointer.innerHTML='<svg width="18" height="25" viewBox="0 0 18 25"><path d="M2 1L2 20L6.8 15.8L10.3 23L13.4 21.4L9.8 14.5L16 14Z" fill="#111" stroke="white" stroke-width="1.5"/></svg>'
       Object.assign(pointer.style,{position:'fixed',left:'0',top:'0',zIndex:'2147483647',pointerEvents:'none',transform:'translate(-50px,-50px)'})
@@ -100,6 +106,7 @@ export async function record({browser,cache,files,prdPath,setup,description,orig
     await at(119); await click(page.getByRole('button',{name:'Enter focus mode',exact:true})); await click(page.getByRole('button',{name:'Fit graph to view',exact:true}))
     await at(123)
     if(errors.length)throw new Error(errors.join('; '))
+    if(await page.getByRole('alert').count())throw new Error('An application error appeared during capture.')
     complete=true
   } finally {
     await context.close()

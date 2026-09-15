@@ -106,7 +106,7 @@ Graph generation handles deliverables and technical prerequisites. Shared specia
 
 Task cards mark learning/review cases. The sidebar shows the reason, missing skills and original CV quotations. Assignment controls, task order, team-wide skill gaps and match explanations live in the selected-task sidebar; there is no separate assignment stage. Manual owner changes invalidate the displayed fit/schedule status; original suggestions remain available for comparison. Recalculating replaces owner suggestions. Duration assumes continuous availability and excludes learning time.
 
-Prompts: `api/app/task_assigner/prompts.py` (assignment and scheduling), `api/app/prompts/assignment_fit.md` (evidence and learning-gap policy). The model compares semantic skill fit; code verifies member/task IDs, evidence references and consistent fit labels, not the truth of every inference. Review citations with the team.
+Prompts: `api/app/task_assigner/prompts.py` (assignment and scheduling), `api/app/prompts/assignment_fit.md` (evidence and learning-gap policy). The model compares semantic skill fit; code verifies member/task IDs, evidence references and consistent fit labels. Returned explanations use literal CV excerpts instead of unchecked model narratives that could incorrectly connect a separately listed tool to a project. The fit classification remains a suggestion to review with the team.
 
 No dependencies added. Model calls use the configured Gemini model, a 60-second timeout per attempt, and at most one repair in the application. Tests: `cd api && uv run pytest`; `npm --prefix web test`; `npm --prefix web run build`.
 

@@ -13,6 +13,7 @@ from ..config import settings
 from ..envelope import ApiError, ok
 from ..services.gemini import _client
 from ..task_assigner import TaskAssigner, AssignerConfig, AssignmentError, check_tasks
+from ..task_assigner.fit import ground_explanations
 
 router = APIRouter()
 
@@ -88,6 +89,7 @@ async def create_assignments(request: Request):
         raise ApiError('model_failed', 'Assignment failed or timed out. The task graph is still available; retry assignment.', retryable=True) from exc
     if not result.ok:
         raise ApiError('plan_invalid', 'Assignments did not pass evidence-reference and schedule checks. Retry assignment or review owners manually.', retryable=True)
+    ground_explanations(result.assignment, body.team.members)
     elapsed = round((time.perf_counter() - started) * 1000)
     owners = {t['id']: [p['member_id'] for p in result.assignment['people'] if t['id'] in p['task_ids']] for t in result.tasks}
     validation = asdict(result.validation)
