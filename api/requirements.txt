@@ -1,9 +1,0 @@
-# uv.lock is the reproducible source of truth; these mirror pyproject.toml.
-fastapi>=0.141,<1
-uvicorn[standard]>=0.34
-pydantic>=2.10
-pydantic-settings>=2.7
-python-multipart>=0.0.20
-google-genai>=2.23,<3
-pytest>=8.3
-httpx>=0.28
