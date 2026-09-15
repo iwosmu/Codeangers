@@ -15,7 +15,7 @@ def _client():
     try:
         from google import genai
     except ImportError as e:
-        raise ApiError("internal", "google-genai is not installed. pip install -r requirements.txt") from e
+        raise ApiError("internal", "google-genai is not installed. Run: uv sync") from e
     return genai.Client(api_key=key)
 
 
@@ -25,12 +25,14 @@ def generate_json(prompt: str, schema: dict, *, reason: bool = False,
     # schema   a responseSchema dict, so the model cannot return prose
     # reason   True for /tasks and /plan, False for extraction
     # files    optional [{"bytes": b"...", "mime": "application/pdf"}]
+    from google.genai import types
+
     model = settings().model_reason if reason else settings().model_extract
     client = _client()
 
     parts: list[Any] = [prompt]
     for f in files or []:
-        parts.append({"inline_data": {"mime_type": f["mime"], "data": f["bytes"]}})
+        parts.append(types.Part.from_bytes(data=f["bytes"], mime_type=f["mime"]))
 
     try:
         resp = client.models.generate_content(

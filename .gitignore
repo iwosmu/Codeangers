@@ -1,9 +1,11 @@
-# python
+# python -- uv.lock is NOT ignored, it is the whole point
 __pycache__/
 *.py[cod]
 .venv/
 venv/
 .pytest_cache/
+.ruff_cache/
+.uv/
 
 # node
 node_modules/

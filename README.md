@@ -17,12 +17,23 @@ Two terminals.
 ```bash
 # terminal 1 — API on :8000
 cd api
-python -m venv .venv
-.venv\Scripts\activate          # Windows;  source .venv/bin/activate on mac/linux
-pip install -r requirements.txt
 copy ..\.env.example ..\.env    # then put your key in it
-uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000
 ```
+
+`uv run` creates `.venv`, installs from `uv.lock` and fetches Python 3.12 if you do
+not have it — no venv to activate, no `pip install`, and everyone gets byte-identical
+versions. Install uv once: `winget install --id astral-sh.uv` (or `pip install uv`).
+
+| Instead of | Use |
+|---|---|
+| `pip install X` | `uv add X` — writes `pyproject.toml` and `uv.lock`, commit both |
+| `pip install -r requirements.txt` | `uv sync` |
+| `pytest` | `uv run pytest` |
+| activating the venv | nothing — prefix the command with `uv run` |
+
+`uv.lock` is committed on purpose. Never edit it by hand; never install into the
+API's venv with pip, or your machine stops matching everyone else's.
 
 ```bash
 # terminal 2 — web on :5173, proxies /api to :8000
