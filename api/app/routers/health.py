@@ -10,6 +10,7 @@ router = APIRouter()
 async def health():
     s = settings()
     return ok({"model": {"extract": s.model_extract, "reason": s.model_reason},
-               "mockMode": s.mock_only,
+               "briefModel": s.gemini_model,
+               "mockMode": False,
                "hasKey": bool(s.gemini_api_key),
                "commit": s.commit})

@@ -44,7 +44,7 @@ async def api_error_handler(_: Request, exc: ApiError) -> JSONResponse:
 async def unhandled_handler(_: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
         status_code=500,
-        content={"ok": False, "error": {"code": "internal", "message": str(exc) or "Something broke.", "retryable": False}},
+        content={"ok": False, "error": {"code": "internal", "message": "Something went wrong. Please retry.", "retryable": False}},
     )
 
 
