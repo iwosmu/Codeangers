@@ -17,7 +17,7 @@ export function Timeline({ state, onReassign }: {
   const critical = new Set(plan.metrics?.criticalPath ?? [])
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div className="timeline-shell">
       <div style={{
         display: 'grid',
         gridTemplateColumns: `120px repeat(${horizon}, minmax(22px, 1fr))`,

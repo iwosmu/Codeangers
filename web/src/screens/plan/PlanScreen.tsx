@@ -1,41 +1,13 @@
-import { Users } from 'lucide-react'
-import { Button, Card, Field } from '../../components/ui'
-import { BriefDocument } from '../../components/BriefDocument'
-import { SourceUploads, CV_ACCEPT } from '../../components/SourceUploads'
-import type { BriefSession } from '../../state/briefs'
-import type { MemberInput } from '../../api/briefTypes'
-
-export function PlanScreen({ session }: { session: BriefSession }) {
-  const { inputs, update, team, project, busy, generate } = session
-  function resize(count: number) {
-    const members = inputs.members.slice(0, count)
-    while (members.length < count) members.push({ id: `m${members.length + 1}`, label: '', text: '' })
-    update({ members })
-  }
-  function changeMember(index: number, patch: Partial<MemberInput>) { update({ members: inputs.members.map((m, i) => i === index ? { ...m, ...patch } : m) }) }
-  function batch(files: File[]) {
-    const members = inputs.members.map(m => ({ ...m }))
-    for (const file of files) {
-      const empty = members.find(m => !m.file && !m.text.trim())
-      if (empty) empty.file = file
-      else members.push({ id: `m${members.length + 1}`, label: '', text: '', file })
-    }
-    update({ members })
-  }
-  const occupied = inputs.members.filter(m => m.file || m.text.trim()).length
-  const ready = occupied === inputs.members.length
-  return <main id="main-content" className="screen screen-flow"><div className="screen-heading"><div><p className="eyebrow">02 · Team overview</p><h2>Know who brings what.</h2><p>Add the CVs, then review the evidence behind each person's strengths, likely roles, and team coverage.</p></div></div>
-    <div className="stack"><Card title="Build the team" right={<span className="pill"><Users size={13} aria-hidden="true" /> {occupied}/{inputs.members.length} ready</span>}>
-      <fieldset disabled={busy} className="input-group"><label className="field team-size"><span className="field-label">Team size</span><select className="select" value={inputs.members.length} onChange={e => resize(Number(e.target.value))}>{[2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} people</option>)}</select></label>
-        {occupied < 8 && <SourceUploads files={[]} onChange={batch} max={8 - occupied} accept={CV_ACCEPT} title="Add CVs in a batch" help="PDF, DOCX, image, TXT or MD. One file per person; team size expands automatically." disabled={busy} />}
-        <div className="grid-three">{inputs.members.map((member, i) => <article className="person-card" key={member.id}><div className="person-top"><div className="avatar">{i + 1}</div><strong>Member {i + 1}</strong></div>
-          <div className="input-group"><Field label={`Member ${i + 1} name (optional)`} value={member.label} onChange={label => changeMember(i, { label })} />
-            <SourceUploads files={member.file ? [member.file] : []} onChange={files => changeMember(i, { file: files[0] })} max={1} accept={CV_ACCEPT} title={`CV for member ${i + 1}`} help="Upload a CV or paste the text below." disabled={busy} />
-            <Field label={`Member ${i + 1} CV text`} rows={3} value={member.text} onChange={text => changeMember(i, { text })} placeholder="Paste CV text…" />
-            <Button kind="ghost" disabled={inputs.members.length <= 2} onClick={() => update({ members: inputs.members.filter((_, index) => index !== i).map((m, index) => ({ ...m, id: `m${index + 1}` })) })}>Remove member {i + 1}</Button>
-          </div></article>)}</div>
-      </fieldset><div className="document-actions"><Button disabled={!ready || team.busy} onClick={() => void generate('team')}>{team.busy ? 'Reading team CVs…' : 'Generate team.md'}</Button>
-      <Button kind="secondary" disabled={!ready || busy || !(inputs.projectText.trim() || inputs.projectFiles.length)} onClick={() => { void generate('team'); void generate('project') }}>Generate both documents</Button><span className="subtle">{project.busy ? 'project.md is also generating.' : 'Every person needs a CV file or pasted text.'}</span></div>
-    </Card><BriefDocument output={team} kind="team" /></div>
-  </main>
+import { ArrowRight, CircleDot, GitBranch, LockKeyhole, Play, Rows3 } from 'lucide-react'
+import { useState } from 'react'
+import { api, ApiFailure } from '../../api/client'
+import { Button, Card, Warnings } from '../../components/ui'
+import type { AppState, Assignment, Warning } from '../../types'
+const kindLabel = { contract: 'Definition', impl: 'Build', integration: 'Integration' }
+export function PlanScreen({ state, patch, locks, onPlanReady }: { state: AppState; patch: (p: Partial<AppState>) => void; locks: () => Assignment[]; onPlanReady: () => void }) {
+  const [busy, setBusy] = useState<'tasks' | 'plan' | null>(null); const [error, setError] = useState<Warning[]>([])
+  async function generateTasks() { if (!state.project) return; setBusy('tasks'); setError([]); try { patch({ graph: await api.tasks(state.project), plan: undefined }) } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setBusy(null) } }
+  async function generatePlan() { if (!state.project || !state.graph || !state.people.length) return; setBusy('plan'); setError([]); try { patch({ plan: await api.plan({ project: state.project, graph: state.graph, people: state.people }, locks()) }); onPlanReady() } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setBusy(null) } }
+  const sectionName = (id: string) => state.project?.sections.find(section => section.id === id)?.name ?? id; const sectionSkills = (id: string) => state.project?.sections.find(section => section.id === id)?.needs ?? []
+  return <main id="main-content" className="screen screen-flow"><div className="screen-heading"><div><p className="eyebrow">03 · Team & Task Flow</p><h1>Turn the brief into executable work.</h1><p>Generate a dependency-aware DAG, see what can start together, then create the first assignment proposal.</p></div><div className="team-chip"><span>{state.people.length}</span><div><strong>Team members</strong><small>Ready for planning</small></div></div></div><Card className="generator-card"><div><span className="generator-icon"><GitBranch size={21} /></span><div><h2>Generate the project task graph</h2><p>Tasks use the reviewed brief, project sections and team context.</p></div></div><Button onClick={generateTasks} disabled={!state.project || busy !== null}>{busy === 'tasks' ? 'Generating task flow…' : state.graph ? 'Regenerate task flow' : 'Generate task flow'}</Button></Card>{!state.graph ? <div className="empty flow-empty"><div className="empty-icon"><Rows3 size={27} /></div><h2>The dependency map starts here</h2><p>Generate tasks to identify parallel tracks, blockers and required skills.</p></div> : <section className="flow-section"><div className="section-heading"><div><p className="eyebrow">Generated DAG</p><h2>{state.graph.tasks.length} tasks across {state.project?.sections.length ?? 0} workstreams</h2></div><div className="legend"><span><i className="shape definition" /> Definition</span><span><i className="shape build" /> Build</span><span><i className="shape integration" /> Integration</span></div></div><div className="task-grid">{state.graph.tasks.map(task => <article className={`task-card ${task.kind}`} key={task.id}><div className="task-card-top"><span className={`task-kind ${task.kind}`}><i />{kindLabel[task.kind]}</span><span className="mono">{task.id}</span></div><h3>{task.title}</h3><p className="task-section">{sectionName(task.sectionId)} · {task.blocks * 30} min</p><div className="skill-tags">{sectionSkills(task.sectionId).map(skill => <span className="skill-tag" key={skill}>{skill}</span>)}</div><div className={`dependency ${task.dependsOn.length ? 'waiting' : 'ready'}`}>{task.dependsOn.length ? <><CircleDot size={15} /><span>Waiting for <strong>{task.dependsOn.join(', ')}</strong></span></> : <><Play size={15} /><strong>Can start now</strong></>}</div></article>)}</div><div className="parallel-note"><GitBranch size={19} /><div><strong>Parallel work is visible at a glance.</strong><p>Every “Can start now” task can begin independently; waiting tasks unlock as their listed dependencies finish.</p></div></div></section>}<Card className="plan-action-card"><div><span className="generator-icon"><LockKeyhole size={20} /></span><div><h2>Generate the assignment plan</h2><p>{locks().length ? `${locks().length} manual assignment(s) will remain protected.` : 'TaskPilot will suggest ownership using skill evidence, preferences and capacity.'}</p></div></div><Button onClick={generatePlan} disabled={!state.graph || !state.people.length || busy !== null}>{busy === 'plan' ? 'Building assignment plan…' : <>Generate assignment plan <ArrowRight size={17} /></>}</Button></Card><Warnings items={error} /></main>
 }

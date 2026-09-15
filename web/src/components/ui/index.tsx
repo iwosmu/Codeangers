@@ -1,8 +1,6 @@
 import type { KeyboardEvent, PropsWithChildren, ReactNode } from 'react'
 import type { Warning } from '../../types'
 import './tokens.css'
-import './premium.css'
-import './wizard.css'
 import './taskpilot.css'
 export function Card({ title, right, children, className = '' }: PropsWithChildren<{ title?: ReactNode; right?: ReactNode; className?: string }>) { return <section className={`card ${className}`}>{(title || right) && <header className="card-heading"><h3>{title}</h3>{right}</header>}{children}</section> }
 export function Button({ children, onClick, kind = 'primary', disabled, type = 'button' }: PropsWithChildren<{ onClick?: () => void; kind?: 'primary' | 'ghost' | 'secondary'; disabled?: boolean; type?: 'button' | 'submit' }>) { return <button type={type} className={`button button-${kind}`} onClick={onClick} disabled={disabled}>{children}</button> }
