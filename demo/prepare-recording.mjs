@@ -60,4 +60,6 @@ for await(const line of commands) {
   catch(error){console.error('Recording failed:',error.message)}
   console.log('READY — record again or quit.')
 }
+input.close()
+process.stdin.pause()
 await browser.close()
