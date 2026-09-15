@@ -31,7 +31,7 @@ services:
     name: codeangers-web
     runtime: static
     rootDir: web
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci && npm install && npm run build
     staticPublishPath: dist
     routes:
       # Same-origin proxy: the browser only ever talks to codeangers-web, so
