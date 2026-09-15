@@ -14,4 +14,6 @@ A transient Gemini failure gets one automatic retry. If a stage still fails, the
 
 Recordings and stills are in ignored `output/playwright/`. They contain CV-derived personal data and must not be committed. Convert the source WebM to an MP4 with the existing FFmpeg installation, preserving 3840×2160 dimensions. The scripted browser zoom makes text readable at this resolution; graph layout and application data are unchanged.
 
+For the requested clean presentation, the recorder hides technical review-note panels only inside its browser. Skill gaps, learning suggestions and their CV evidence stay visible. Application error screens cause the recording to fail; they are never hidden or replaced with successful results.
+
 The application's health endpoint reports `RENDER_GIT_COMMIT` (or explicit `COMMIT`) so the deployed backend version can be checked after a release. Both Blueprint services target `main`.

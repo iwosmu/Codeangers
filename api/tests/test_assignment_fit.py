@@ -166,3 +166,19 @@ def test_route_rejects_invalid_result_instead_of_applying_owners(monkeypatch):
         r = client.post('/api/task-assignments', json={'team': team_data(), 'tasks': tasks_data()})
     assert r.status_code == 422 and r.json()['error']['retryable']
     assert 'owners' not in r.json()
+
+
+def test_returned_reason_cannot_invent_a_tool_project_relationship(monkeypatch):
+    payload = output_data()
+    payload['fit'][1]['matches'][0]['reason'] = 'Sam built the Python project with FastAPI and deployed it on AWS.'
+    result, _ = run_with([payload])
+    monkeypatch.setattr(route, 'generate_assignment', lambda body: result)
+    with TestClient(app) as client:
+        response = client.post('/api/task-assignments', json={'team': team_data(), 'tasks': tasks_data()})
+    assert response.status_code == 200
+    matches = response.json()['data']['assignment']['fit']
+    reason = matches[1]['matches'][0]['reason']
+    assert 'Sam built a project using Python.' in reason
+    assert 'FastAPI' not in reason and 'AWS' not in reason
+    assert 'Alex' not in reason
+    assert matches[0]['matches'][0]['missing_skills'] == ['Vue']

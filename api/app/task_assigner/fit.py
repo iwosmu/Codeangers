@@ -34,6 +34,30 @@ FIT_ASSIGNMENT_SCHEMA['properties']['fit'] = {'type': 'array', 'items': gemini_s
 FIT_ASSIGNMENT_SCHEMA['required'].append('fit')
 
 
+def ground_explanations(assignment: dict, profiles: list[MemberBrief]) -> None:
+    """Expose literal CV excerpts instead of unchecked narrative relationships.
+
+    The model still proposes fit and learning gaps. Its free-form reason can
+    accidentally claim a tool was used on a project when it was only listed
+    elsewhere, so the returned explanation is rendered from validated refs.
+    """
+    members = {p.id: p for p in profiles}
+    for fit in assignment['fit']:
+        for match in fit['matches']:
+            if match['match'] == 'unconfirmed':
+                match['reason'] = 'Relevant experience is not stated in the supplied CV. Confirm this proposed owner with the team.'
+                continue
+            evidence = {e.id: e for e in members[match['member_id']].evidence}
+            excerpts = []
+            for ref in match['evidence_ids'][:2]:
+                quote = ' '.join(evidence[ref].quote.split())
+                if len(quote) > 230:
+                    quote = quote[:230].rsplit(' ', 1)[0] + '…'
+                excerpts.append(f'“{quote}”')
+            lead = 'Direct match suggested from CV evidence: ' if match['match'] == 'direct' else 'Transferable experience suggested from CV evidence: '
+            match['reason'] = lead + ' '.join(excerpts)
+
+
 def validate_fit(assignment: dict, profiles: list[MemberBrief], tasks: list[dict]) -> list[str]:
     try:
         fits = TypeAdapter(list[TaskFit]).validate_python(assignment.get('fit'))
