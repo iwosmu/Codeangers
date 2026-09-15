@@ -116,3 +116,7 @@ friends are real — no redeploy needed, just restart the service.
 3. One repair round when the validator finds errors, then give up and let the user
    fix it by hand. Never loop.
 4. The Gemini key lives in `api/.env` only. Never in `web/`, never in a response, never in git.
+
+## Consolidated frontend design
+
+The interface applies the visual system from `new_desing` (`a75ac77`) to the working frontend on `main`: connected progress navigation, monochrome surfaces, project guidance, team coverage, and profile review. Project context/constraints, multimodal attachments, 2–8 member inputs, pasted CVs, Markdown views/downloads, evidence disclosures, and the reviewed GitHub export are retained. Graph node dimensions, layout, dependency routing, zoom/pan, orientation, focus mode and ownership controls remain from `main`; graph changes are visual only. The design branch's demo fallbacks and legacy API calls are not used.

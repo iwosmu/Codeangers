@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
 import { Button } from './ui'
 
 export const CV_ACCEPT = '.pdf,.docx,.png,.jpg,.jpeg,.webp,.heic,.heif,.txt,.md'
 export const PROJECT_ACCEPT = CV_ACCEPT + ',.pptx,.mp3,.wav,.m4a,.aac,.ogg,.flac,.aiff'
 export function SourceUploads({ files, onChange, accept, max, title, help, disabled = false }: { files: File[]; onChange: (files: File[]) => void; accept: string; max: number; title: string; help: string; disabled?: boolean }) {
+  const inputId = useId()
   const input = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   function add(incoming: File[]) {
@@ -18,8 +19,9 @@ export function SourceUploads({ files, onChange, accept, max, title, help, disab
   }
   return <div className="source-upload" onPaste={event => { const pasted = Array.from(event.clipboardData.files); if (pasted.length) { event.preventDefault(); add(pasted) } }}>
     <div className="dropzone" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); add(Array.from(e.dataTransfer.files)) }}>
-      <Upload size={22} aria-hidden="true" /><p className="dropzone-title">{title}</p><p className="dropzone-text">{help}</p>
-      <input ref={input} aria-label={title} type="file" accept={accept} multiple={max > 1} disabled={disabled} onChange={e => { add(Array.from(e.target.files ?? [])); e.target.value = '' }} />
+      <span className="upload-icon"><Upload size={22} aria-hidden="true" /></span><div className="upload-copy"><p className="dropzone-title">{title}</p><p className="dropzone-text">{help}</p></div>
+      <input id={inputId} ref={input} className="upload-file-input" aria-label={title} type="file" accept={accept} multiple={max > 1} disabled={disabled} onChange={e => { add(Array.from(e.target.files ?? [])); e.target.value = '' }} />
+      <label className={`button button-secondary upload-choose ${disabled ? 'disabled' : ''}`} htmlFor={inputId}>Choose {max > 1 ? 'files' : 'file'}</label>
     </div>
     {files.length > 0 && <ul className="attachment-list">{files.map((file, i) => <li key={`${file.name}-${i}`}><span>{file.name} <small>({(file.size / 1024).toFixed(0)} KB)</small></span><Button kind="ghost" disabled={disabled} onClick={() => { setError(''); onChange(files.filter((_, index) => i !== index)) }}>Remove</Button></li>)}</ul>}
     {error && <p className="notice" role="alert">{error}</p>}

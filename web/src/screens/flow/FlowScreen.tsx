@@ -6,8 +6,8 @@ import { layoutGraph, NODE_WIDTH, NODE_HEIGHT, COLUMN_GAP, PADDING } from './lay
 import './flow.css'
 import { GithubExport } from './GithubExport'
 
-const categoryColours: Record<string, string> = { frontend: '#456bb2', backend: '#367366', database: '#367366', design: '#8b6099', testing: '#ad7639', devops: '#607280', setup: '#607280', docs: '#797069' }
-const colour = (group: string) => categoryColours[group.toLowerCase()] ?? '#73736c'
+const categoryColours: Record<string, string> = { frontend: '#333333', backend: '#555555', database: '#555555', design: '#666666', testing: '#444444', devops: '#606060', setup: '#606060', docs: '#707070' }
+const colour = (group: string) => categoryColours[group.toLowerCase()] ?? '#737373'
 const clampZoom = (value: number) => Math.min(1.6, Math.max(.3, value))
 
 export function FlowScreen({ session }: { session: BriefSession }) {
@@ -104,7 +104,7 @@ export function FlowScreen({ session }: { session: BriefSession }) {
                 const vertical = direction === 'vertical'
                 const x1 = from.x + (vertical ? NODE_WIDTH / 2 : NODE_WIDTH), y1 = from.y + (vertical ? NODE_HEIGHT : NODE_HEIGHT / 2), x2 = to.x + (vertical ? NODE_WIDTH / 2 : -5), y2 = to.y + (vertical ? -5 : NODE_HEIGHT / 2)
                 const path = vertical ? `M ${x1} ${y1} C ${x1} ${y1 + 38}, ${x2} ${y2 - 38}, ${x2} ${y2}` : `M ${x1} ${y1} C ${x1 + 38} ${y1}, ${x2 - 38} ${y2}, ${x2} ${y2}`
-                return <path key={i} d={path} fill="none" stroke={active ? '#415d54' : '#c5ccc6'} strokeWidth={active ? 2.5 : 1.5} opacity={focused && !active ? .18 : 1} markerEnd="url(#flow-arrow)" />
+                return <path key={i} d={path} fill="none" stroke={active ? '#111111' : '#c9c9c4'} strokeWidth={active ? 2.5 : 1.5} opacity={focused && !active ? .18 : 1} markerEnd="url(#flow-arrow)" />
               })}</svg>
               {layout.nodes.map(node => <button key={node.id} className={`flow-node ${node.id === current?.id ? 'selected' : ''} ${(focused && !related.has(node.id)) || (query && !matching.has(node.id)) ? 'dimmed' : ''}`} style={{ left: node.x, top: node.y, width: NODE_WIDTH, height: NODE_HEIGHT, '--category': colour(node.group) } as CSSProperties} onClick={() => choose(node.id)} aria-pressed={node.id === current?.id} aria-label={`Task ${node.id}: ${node.label}`}><span className="flow-node-top"><span className="flow-category"><i />{node.group}</span><span className="mono">{String(node.id).padStart(2, '0')}</span></span><strong>{node.label}</strong><span className="flow-node-bottom"><span><Clock3 size={12} aria-hidden="true" />{node.estimated_time_hours}h</span><span><Users size={12} aria-hidden="true" />{github.owners[node.id]?.length ?? 0}/{node.people_needed}</span><span className="flow-owner-names">{(github.owners[node.id] ?? []).map(memberName).join(", ") || "Unassigned"}</span>{node.id === current?.id && <ArrowUpRight size={14} aria-hidden="true" />}</span></button>)}
             </div></div></div>
