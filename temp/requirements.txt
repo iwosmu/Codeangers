@@ -1,0 +1,3 @@
+google-genai>=1.0,<3
+# tests only:
+# pytest>=8
