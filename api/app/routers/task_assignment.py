@@ -49,7 +49,7 @@ def generate_assignment(body: AssignmentInput):
     client = _client()
     try:
         assigner = TaskAssigner(client=client, config=AssignerConfig(
-            model=settings().gemini_model, thinking_level='medium', max_fix_rounds=1,
+            model=settings().gemini_model, thinking_level='low', max_fix_rounds=1,
             # Scarce expertise can make idle time unavoidable. Preserve skill truth
             # and report idle intervals as warnings rather than force a wrong match.
             max_idle_fraction=1.0))
@@ -82,7 +82,7 @@ async def create_assignments(request: Request):
     except AssignmentError as exc:
         raise ApiError('model_invalid_json', 'Gemini returned an incomplete assignment. Please retry.', retryable=True) from exc
     except Exception as exc:
-        logging.getLogger(__name__).warning('Task assignment failed (%s)', type(exc).__name__)
+        logging.getLogger(__name__).warning('Task assignment failed (%s, code=%s)', type(exc).__name__, getattr(exc, 'code', None))
         if getattr(exc, 'code', None) == 429:
             raise ApiError('rate_limited', 'Gemini quota or rate limit reached. Wait a moment and retry.', retryable=True) from exc
         raise ApiError('model_failed', 'Assignment failed or timed out. The task graph is still available; retry assignment.', retryable=True) from exc

@@ -7,6 +7,7 @@ services:
   - type: web
     name: codeangers-api
     runtime: python
+    branch: main
     plan: free
     rootDir: api
     buildCommand: pip install uv && uv sync --frozen --no-dev
@@ -15,9 +16,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.6"
-      # Leave true until the prompts exist; the deployed app then works from fixtures.
+      # Current brief/planning endpoints always use Gemini.
       - key: MOCK_ONLY
-        value: "true"
+        value: "false"
       # Only needed if the browser ever calls the API directly instead of through
       # the static site's /api rewrite.
       - key: CORS_ORIGINS
@@ -30,8 +31,9 @@ services:
   - type: web
     name: codeangers-web
     runtime: static
+    branch: main
     rootDir: web
-    buildCommand: npm ci && npm install && npm run build
+    buildCommand: npm ci && npm run build
     staticPublishPath: dist
     routes:
       # Same-origin proxy: the browser only ever talks to codeangers-web, so

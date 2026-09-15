@@ -98,6 +98,8 @@ wait for it to answer, then leave the tab open. Do not find this out on stage.
 
 The graph appears first, then owner suggestions run automatically. Assignment can be retried independently. Suggested owners feed the existing editable owner controls and reviewed GitHub export; nothing is published automatically.
 
+Graph generation handles deliverables and technical prerequisites. Shared specialists are scheduled by the subsequent owner-assignment call, so skill overlap does not create artificial dependency edges. Application graph generation reports idle capacity as a warning instead of rejecting a valid graph at an arbitrary utilization threshold; cycles, missing dependencies and excessive per-task headcounts remain errors.
+
 - **Direct match:** evidence for all required skills.
 - **Closest skillset · learning needed:** relevant CV evidence, explicit missing skills and a concrete first learning step.
 - **Fit unconfirmed:** insufficient relevant evidence to rank learning fit; a proposed owner needs team confirmation.
@@ -111,3 +113,7 @@ No dependencies added. Model calls use the configured Gemini model, a 60-second 
 ## Consolidated frontend design
 
 The interface applies the visual system from `new_desing` (`a75ac77`) to the working frontend on `main`: connected progress navigation, monochrome surfaces, project guidance, team coverage, and profile review. Project context/constraints, multimodal attachments, 2–8 member inputs, pasted CVs, Markdown views/downloads, evidence disclosures, and the reviewed GitHub export are retained. Graph node dimensions, layout, dependency routing, zoom/pan, orientation, focus mode and ownership controls remain from `main`; graph changes are visual only. The design branch's demo fallbacks and legacy API calls are not used.
+
+## Demo recording
+
+See [demo/README.md](demo/README.md) for the real-project, real-CV Playwright recording workflow. Validated responses stay in process memory; only the requested video and stills are saved in the ignored output directory. The app itself has no demo-result cache.
