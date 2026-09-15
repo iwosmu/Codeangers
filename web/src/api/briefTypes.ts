@@ -21,3 +21,11 @@ export interface DocumentResult<T> {
 }
 export interface BriefInputs { setup: Setup; members: MemberInput[]; projectText: string; projectFiles: File[] }
 export interface Output<T> { document?: DocumentResult<T>; busy: boolean; error?: string }
+export interface FlowNode { id: number; label: string; title: string; group: string; estimated_time_hours: number; people_needed: number }
+export interface FlowEdge { from: number; to: number }
+export interface TaskGraphResult {
+  graph: { nodes: FlowNode[]; edges: FlowEdge[] };
+  tasks: { id: number; name: string; description: string; prerequisites: number[]; estimated_time_hours: number; people_needed: number; group?: string }[];
+  team_size: number; rounds: number; ms: number;
+  validation: { ok: boolean; summary: string; errors: string[]; warnings: string[]; makespan_hours: number; total_person_hours: number; idle_person_hours: number; idle_fraction: number; idle_intervals: { start: number; end: number; idle_people: number }[] };
+}

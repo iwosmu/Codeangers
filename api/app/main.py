@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .envelope import ApiError, api_error_handler, unhandled_handler
-from .routers import briefs, health
+from .routers import briefs, health, task_flow
 
 app = FastAPI(title="Team Work Splitter", version="0.1.0")
 
@@ -18,7 +18,7 @@ app.add_middleware(
 app.add_exception_handler(ApiError, api_error_handler)
 app.add_exception_handler(Exception, unhandled_handler)
 
-for r in (health.router, briefs.router):
+for r in (health.router, briefs.router, task_flow.router):
     app.include_router(r, prefix="/api")
 
 

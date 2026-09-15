@@ -68,3 +68,15 @@ await test('caller abort signal reaches fetch', async t => {
   t.mock.method(globalThis, 'fetch', async (_, init) => { assert.equal(init.signal, controller.signal); return envelope(document) })
   await api.project(inputs, controller.signal)
 })
+
+await test('task planner receives the actual Markdown pair, team size, and abort signal', async t => {
+  const controller = new AbortController()
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    assert.equal(url, '/api/task-graph')
+    assert.deepEqual(JSON.parse(init.body), { project_md: '# Project', team_md: '# Team', team_size: 5 })
+    assert.equal(init.headers['content-type'], 'application/json')
+    assert.equal(init.signal, controller.signal)
+    return envelope({ graph: { nodes: [], edges: [] }, validation: { ok: true } })
+  })
+  assert.equal((await api.taskGraph('# Project', '# Team', 5, controller.signal)).validation.ok, true)
+})
