@@ -26,3 +26,18 @@ await test('bad edges and cycles fail without hanging the UI', () => {
   assert.throws(() => layoutGraph(nodes, [{ from: 99, to: 1 }]), /missing/)
   assert.throws(() => layoutGraph(nodes, [{ from: 1, to: 2 }, { from: 2, to: 1 }]), /cycle/)
 })
+await test('downward layout preserves dependencies and keeps parallel tasks apart', () => {
+  const layout = layoutGraph(nodes, [{ from: 1, to: 3 }, { from: 2, to: 3 }, { from: 3, to: 4 }], 'vertical')
+  const byId = Object.fromEntries(layout.nodes.map(n => [n.id, n]))
+  assert.equal(byId[1].y, byId[2].y)
+  assert.notEqual(byId[1].x, byId[2].x)
+  assert.ok(byId[3].y > byId[2].y)
+  assert.ok(byId[4].y > byId[3].y)
+  assert.ok(layout.nodes.every(n => n.x + NODE_WIDTH <= layout.width && n.y + NODE_HEIGHT <= layout.height))
+})
+await test('parallel branches follow their prerequisites instead of crossing by input order', () => {
+  const layout = layoutGraph([1, 2, 3, 4].map(id => ({ id, label: `Task ${id}` })), [{ from: 1, to: 4 }, { from: 2, to: 3 }])
+  const byId = Object.fromEntries(layout.nodes.map(n => [n.id, n]))
+  assert.equal(byId[1].y, byId[4].y)
+  assert.equal(byId[2].y, byId[3].y)
+})
