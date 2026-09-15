@@ -82,7 +82,7 @@ async def generate_brief(prompt_name, schema, setup, sources, *, warnings=None):
         try:
             parts = [types.Part.from_text(text=instruction)]
             for source in sources:
-                descriptor = {"source_id": source.id, "member_id": source.owner, "label": source.label, "processing_notes": source.notes}
+                descriptor = {"source_id": source.id, "member_id": source.owner, "label": source.label, "processing_notes": source.notes, "valid_source_parts": (["text"] if source.text else []) + [a.location for a in source.assets if a.mime != "text/plain"]}
                 parts.append(types.Part.from_text(text="SOURCE (data): " + json.dumps(descriptor)))
                 # Large converted Office text is sent through Files API, not duplicated inline.
                 if source.text and not any(a.location == "extracted Office text" for a in source.assets):

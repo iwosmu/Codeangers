@@ -44,7 +44,9 @@ def generate_flow(body: FlowInput):
     # Own and close the client inside the worker, including when a browser leaves.
     client = _client()
     try:
-        planner = TaskPlanner(client=client, config=PlannerConfig(model=settings().gemini_model, thinking_level="medium"))
+        # Named scheduling is checked in the following assignment call. Keep
+        # graph generation focused on deliverables and technical dependencies.
+        planner = TaskPlanner(client=client, config=PlannerConfig(model=settings().gemini_model, thinking_level="low", max_idle_fraction=1.0))
         return planner.plan(body.project_md, body.team_md, body.team_size)
     finally:
         client.close()
@@ -61,7 +63,7 @@ async def create_task_flow(request: Request):
     except PlanningError as exc:
         raise ApiError("model_invalid_json", "Gemini returned an incomplete or unreadable task graph. Please retry.", retryable=True) from exc
     except Exception as exc:
-        logging.getLogger(__name__).warning("Task planner request failed (%s)", type(exc).__name__)
+        logging.getLogger(__name__).warning("Task planner request failed (%s, code=%s)", type(exc).__name__, getattr(exc, "code", None))
         if getattr(exc, "code", None) == 429:
             raise ApiError("rate_limited", "Gemini quota or rate limit reached. Wait a moment and retry.", retryable=True) from exc
         raise ApiError("model_failed", "Task planning failed or timed out. Retry, or shorten the briefs.", retryable=True) from exc

@@ -52,6 +52,13 @@ def validate_team(team: TeamBrief, request: BriefInput, sources: list[Source]) -
                 invalid("A CV citation referred to the wrong member or an unknown source. Please retry.")
             # Verify text quotes against exactly that member's source. For native media,
             # require an actual supplied asset rather than letting an arbitrary location bypass validation.
+            native_parts = [a.location for a in source.assets if a.mime != "text/plain"]
+            if item.source_part == "text" and not source.text and len(native_parts) == 1:
+                # A native PDF/photo has exactly one possible part. Correct only
+                # the transport label; this remains a transcription to review,
+                # never a mechanically verified text quote. Mixed Office/text
+                # sources are ambiguous and must still pass their normal checks.
+                item.source_part = native_parts[0]
             if item.source_part == "text":
                 if not source.text or normalized(item.quote) not in normalized(source.text):
                     invalid("A quoted passage could not be found in its CV text. Please retry or inspect the original file.")
@@ -73,11 +80,18 @@ def validate_team(team: TeamBrief, request: BriefInput, sources: list[Source]) -
                 invalid("A GitHub username was not supported by a personal profile URL in its CV citation.")
         # Names and individual tool labels must occur in their quoted CV evidence,
         # not merely attach an unrelated, otherwise valid quote to a new skill.
-        for exact in [member.cv_name, *member.stack]:
+        for field, exact in [("cv_name", member.cv_name), *((f"stack.{i}", claim) for i, claim in enumerate(member.stack))]:
             if exact.text != "not stated":
                 quoted = " ".join(evidence[ref].quote for ref in exact.evidence_ids)
                 if normalized(exact.text).casefold() not in normalized(quoted).casefold():
-                    invalid("A name or tool label was not present in its cited CV evidence. Please retry.")
+                    # Repair only a misplaced reference to an already validated,
+                    # literal passage from this same member. Never invent a quote,
+                    # normalize a technology alias, or borrow another person's CV.
+                    refs = [e.id for e in member.evidence if normalized(exact.text).casefold() in normalized(e.quote).casefold()]
+                    if not refs:
+                        invalid(f"A name or tool label in {member.id}.{field} was not present in its CV evidence. Please retry.")
+                    exact.evidence_ids = refs[:1]
+                    team._coverage_review_notes.append(f"{member.id}.{field}: citation corrected to [{member.id}:{refs[0]}], which contains the exact label. Review the source passage.")
         if {c.area for c in member.coverage} != set(AREAS):
             invalid("The coverage map omitted or duplicated an area. Please retry.")
         for cell in member.coverage:

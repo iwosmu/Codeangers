@@ -143,6 +143,7 @@ class TaskAssigner:
             thinking_config=self._thinking_config(),
             max_output_tokens=self.config.max_output_tokens,
             temperature=self.config.temperature,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
         )
         response = self.client.models.generate_content(
             model=self.config.model, contents=contents, config=cfg

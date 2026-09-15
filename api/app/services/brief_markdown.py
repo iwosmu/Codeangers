@@ -67,7 +67,7 @@ def render_team(team: TeamBrief, request: BriefInput, sources: list[Source]) -> 
             candidates = [m for m in supported if scores[cells[m.id][area].level] == best]
             leads.append(f"{AREA_LABELS[area]}: " + "; ".join(person(m) for m in candidates) + " — candidate(s) to discuss based on CV coverage; interest and availability not stated.")
     if team._coverage_review_notes:
-        lines += ["", "### Coverage checks to review", "", bullets([safe(n) for n in team._coverage_review_notes])]
+        lines += ["", "### Evidence checks to review", "", bullets([safe(n) for n in team._coverage_review_notes])]
     lines += ["", "### Team gaps", "", bullets(gaps), "", "### Overlaps", "", bullets(overlaps), "",
               "### Suggested natural leads", "", bullets(leads), "", "### Questions for the team", "", bullets([safe(q) for q in team.open_questions]), "",
               "## Source notes", "", bullets([safe(s.id) + ": " + safe(s.label) + (" — " + safe(s.notes) if s.notes else "") for s in sources]), "",

@@ -143,3 +143,22 @@ def test_worker_closes_client_on_model_failure(monkeypatch):
     with pytest.raises(PlanningError):
         task_flow.generate_flow(task_flow.FlowInput(project_md='Project', team_md='Team', team_size=2))
     assert closed == [True]
+
+
+@pytest.mark.parametrize('cycle', [False, True])
+def test_application_reports_idle_capacity_but_still_rejects_cycles(monkeypatch, cycle):
+    import json
+    data = graph()
+    data['nodes'][0]['people_needed'] = 2
+    data['nodes'][1]['people_needed'] = 3
+    data['nodes'][2].update(people_needed=1, estimated_time_hours=8)
+    if cycle:
+        data['edges'].append({'from': 3, 'to': 1})
+    def generate_content(**kwargs):
+        return SimpleNamespace(candidates=[SimpleNamespace(finish_reason=types.FinishReason.STOP, content=types.Content(role='model', parts=[types.Part.from_text(text=json.dumps(data))]))], text=json.dumps(data))
+    monkeypatch.setattr(task_flow, '_client', lambda: SimpleNamespace(models=SimpleNamespace(generate_content=generate_content), close=lambda: None))
+    result = task_flow.generate_flow(task_flow.FlowInput(project_md='Project', team_md='Team', team_size=5))
+    assert result.ok is not cycle
+    if not cycle:
+        assert result.validation.idle_fraction > .25
+        assert any('idle capacity' in warning for warning in result.validation.warnings)

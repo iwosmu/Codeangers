@@ -130,7 +130,7 @@ def test_unsupported_coverage_is_withheld_with_reviewable_sources():
     validate_team(team, req, sources)
     assert cell.level == 'none' and not cell.evidence_ids
     assert '[m1:e1]' in team._coverage_review_notes[0]
-    assert 'Coverage checks to review' in render_team(team, req, sources)
+    assert 'Evidence checks to review' in render_team(team, req, sources)
     assert '_coverage_review_notes' not in team.model_dump()
 
 
@@ -234,3 +234,47 @@ def test_markdown_download_roundtrips_exact_content_without_storage():
             assert response.headers['content-type'].startswith('text/markdown')
         assert client.post('/api/download/evil.html',data={'markdown':'hi'}).status_code==400
         assert client.post('/api/download/team.md',data={'markdown':''}).status_code==400
+
+
+def test_unambiguous_native_citation_label_is_normalized():
+    from app.services.brief_files import Asset
+    req, sources = text_inputs()
+    sources[0].text = ''
+    sources[0].assets = [Asset(b'%PDF-placeholder', 'application/pdf')]
+    result = validate_team(team_fixture(), req, sources)
+    assert result.members[0].evidence[0].source_part == 'attachment'
+    assert result.members[1].evidence[0].source_part == 'text'
+
+
+@pytest.mark.parametrize('mixed_text', [False, True])
+def test_native_label_correction_cannot_bypass_ambiguous_or_text_quotes(mixed_text):
+    from app.services.brief_files import Asset
+    req, sources = text_inputs()
+    sources[0].assets = [Asset(b'image', 'image/png', 'image-1')]
+    if mixed_text:
+        sources[0].text = 'A different quoted passage.'
+    else:
+        sources[0].text = ''
+        sources[0].assets.append(Asset(b'image2', 'image/png', 'image-2'))
+    with pytest.raises(ApiError): validate_team(team_fixture(), req, sources)
+
+
+def test_exact_label_can_relink_only_to_validated_same_member_quote():
+    req, sources = text_inputs()
+    team = team_fixture()
+    member = team.members[0]
+    member.evidence.append(member.evidence[0].model_copy(update={'id': 'e2', 'quote': 'Alex.'}))
+    member.stack[0].evidence_ids = ['e2']
+    validate_team(team, req, sources)
+    assert member.stack[0].evidence_ids == ['e1']
+    assert 'citation corrected' in team._coverage_review_notes[0]
+
+
+def test_exact_label_relink_cannot_borrow_other_members_evidence():
+    req, sources = text_inputs()
+    team = team_fixture()
+    sources[1].text += ' Kubernetes.'
+    team.members[1].evidence[0].quote = sources[1].text
+    team.members[0].stack[0].text = 'Kubernetes'
+    with pytest.raises(ApiError, match='m1.stack.0'):
+        validate_team(team, req, sources)

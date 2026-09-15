@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     model_extract: str = "gemini-3.5-flash-lite"
     model_reason: str = "gemini-3.8-flash"
     cors_origins: str = "http://localhost:5173"
-    commit: str = "dev"
+    commit: str = Field(default="dev", validation_alias=AliasChoices("COMMIT", "RENDER_GIT_COMMIT"))
 
     @property
     def origins(self) -> list[str]:

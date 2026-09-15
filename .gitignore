@@ -28,3 +28,6 @@ api/.cache/
 
 # Generated TypeScript build metadata
 *.tsbuildinfo
+
+# Local demo recordings (may contain CV-derived personal data)
+output/playwright/
