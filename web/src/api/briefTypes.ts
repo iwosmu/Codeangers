@@ -3,7 +3,7 @@ export interface MemberInput { id: string; label: string; text: string; file?: F
 export interface Claim { text: string; evidence_ids: string[] }
 export interface Evidence { id: string; source_id: string; source_part: string; location: string; quote: string }
 export interface MemberBrief {
-  id: string; cv_name: Claim; evidence: Evidence[]; roles: Claim[]; strengths: Claim[];
+  id: string; cv_name: Claim; github?: Claim; evidence: Evidence[]; roles: Claim[]; strengths: Claim[];
   gaps: { area: string; relevance: string }[]; stack: Claim[]; experience: Claim; working_style: Claim[];
   coverage: { area: string; level: 'strong' | 'some' | 'none'; evidence_ids: string[] }[];
 }

@@ -80,3 +80,18 @@ await test('task planner receives the actual Markdown pair, team size, and abort
   })
   assert.equal((await api.taskGraph('# Project', '# Team', 5, controller.signal)).validation.ok, true)
 })
+
+await test('GitHub preview and export send the same reviewed data with a separate credential header', async t => {
+  const input = { repository: 'example/demo', export_id: 'same-id', tasks: [{ id: 1, owners: ['m2'] }] }
+  const paths = []
+  t.mock.method(globalThis, 'fetch', async (url, init) => {
+    paths.push(url)
+    assert.equal(init.headers['x-github-token'], 'session-token')
+    assert.deepEqual(JSON.parse(init.body), input)
+    assert.equal(init.body.includes('session-token'), false)
+    return envelope({ complete: false, issues: [{ key: 'parent', number: 12 }], error: 'Retry' })
+  })
+  await api.githubPreview(input, 'session-token')
+  assert.equal((await api.githubExport(input, 'session-token')).complete, false)
+  assert.deepEqual(paths, ['/api/github/preview', '/api/github/export'])
+})

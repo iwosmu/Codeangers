@@ -62,6 +62,7 @@ class Gap(StrictModel):
 class MemberBrief(StrictModel):
     id: str
     cv_name: Claim
+    github: Claim = Field(default_factory=lambda: Claim(text="not stated", evidence_ids=[]), description="Personal GitHub username explicitly linked in the CV; otherwise not stated.")
     evidence: list[Evidence] = Field(max_length=50)
     roles: list[Claim] = Field(max_length=3)
     strengths: list[Claim] = Field(max_length=5)

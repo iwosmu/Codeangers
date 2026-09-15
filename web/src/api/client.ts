@@ -1,3 +1,4 @@
+import type { ExportInput, ExportPreview, ExportResult } from './githubTypes'
 import type { ApiResult } from '../types'
 import type { BriefInputs, DocumentResult, ProjectBrief, TeamBrief, TaskGraphResult } from './briefTypes'
 
@@ -32,6 +33,8 @@ async function brief<T>(kind: 'team' | 'project', inputs: BriefInputs, signal?: 
 }
 
 export const api = {
+  githubPreview: (input: ExportInput, token: string) => call<ExportPreview>('/github/preview', { method: 'POST', headers: { 'content-type': 'application/json', 'x-github-token': token }, body: JSON.stringify(input) }),
+  githubExport: (input: ExportInput, token: string) => call<ExportResult>('/github/export', { method: 'POST', headers: { 'content-type': 'application/json', 'x-github-token': token }, body: JSON.stringify(input) }),
   taskGraph: (project_md: string, team_md: string, team_size: number, signal?: AbortSignal) => call<TaskGraphResult>('/task-graph', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ project_md, team_md, team_size }), signal }),
   health: () => call<{ mockMode: boolean; hasKey: boolean }>('/health', { method: 'GET' }),
   team: (inputs: BriefInputs, signal?: AbortSignal) => brief<TeamBrief>('team', inputs, signal),

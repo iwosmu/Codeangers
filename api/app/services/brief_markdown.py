@@ -36,7 +36,7 @@ def render_team(team: TeamBrief, request: BriefInput, sources: list[Source]) -> 
                 return "“" + safe(quote) + "”"
             justification = "; ".join(excerpt(ref) for ref in c.evidence_ids[:2])
             return claim(m.id, c) + " — CV excerpt: " + justification + " Full passages appear in CV evidence below."
-        lines += [f"## {safe(names[m.id])}", "", f"Member ID: {safe(m.id)}", "", f"CV name: {claim(m.id, m.cv_name)}", "",
+        lines += [f"## {safe(names[m.id])}", "", f"Member ID: {safe(m.id)}", "", f"CV name: {claim(m.id, m.cv_name)}", "", f"GitHub: {claim(m.id, m.github)}", "",
                   "### Likely roles", "", bullets([role(c) for c in m.roles]), "",
                   "### Strengths", "", bullets([claim(m.id, c) for c in m.strengths]), "",
                   "### Gaps / unknowns", "", bullets([f"No evidence of {safe(g.area)} in the supplied CV — not stated. {safe(g.relevance)}" for g in m.gaps]), "",

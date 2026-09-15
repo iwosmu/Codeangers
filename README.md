@@ -72,3 +72,20 @@ An optional live smoke test uses only fictional CVs and consumes Gemini quota:
 cd api
 uv run python scripts/smoke_briefs.py --live
 ```
+
+## GitHub task export (issues #1 and #2)
+
+After generating both briefs and the task flow:
+
+1. Select each task and choose its owners in the inspector. The count must match its required headcount. CV coverage is shown to inform the team's decision; availability and named-person scheduling still need human review.
+2. Confirm GitHub usernames in the export panel. A personal profile URL explicitly present in a CV is extracted with evidence; absent profiles remain `not stated` and can be entered manually. Repository links are not treated as personal profiles.
+3. Enter `owner/repository` and a fine-grained GitHub token with **Issues: read and write** permission for that repository. Each teammate must be assignable there. Tokens are entered in the app, kept only in React/request memory, and never saved in `.env` or browser storage.
+4. Click **Check access & preview issues**. Review the public/private destination, exact issue text, and assignments. Click **Create … issues on GitHub** to publish.
+
+The export creates one parent issue and one native sub-issue per task, with assignees, estimates, prerequisite issue links, and a Mermaid dependency diagram on the parent. Only previewed task/project content is sent; CV files and the evidence ledger are not included. This is a one-way export, without ongoing synchronization or GitHub Projects integration. Dependency arrows are represented by links, not native GitHub blocking relationships.
+
+If an operation fails, **Resume export** reconciles remote issue markers before creating missing issues and completing links/assignments. The reviewed snapshot stays frozen once export starts. Keep the session open: reload or Clear session discards local credentials and recovery context. Do not remove TaskPilot markers while an export is incomplete. Reconciliation supports up to 1,000 repository issues/PRs; it refuses to create anything if that scan cannot finish. Use a single API process for this hackathon version; its in-process lock does not coordinate multiple server replicas.
+
+API: `POST /api/github/preview` performs read-only account/repository/assignee checks and returns drafts. `POST /api/github/export` publishes or resumes the reviewed payload. Both accept `X-GitHub-Token` and JSON containing `repository`, stable UUID `export_id`, project `title`/`summary`, `members: [{id, login}]`, and `tasks: [{id, title, description, hours, people, owners, prerequisites}]`. `owners` uses member IDs. Limits: 2–8 members, 1–50 tasks, 500 KB request. Export returns `{complete, issues: [{key, number, url}], error}` inside the normal API envelope, including partial progress on failure. Token permissions may still be rejected by GitHub during creation; preview is not a guarantee of write access.
+
+No new dependencies. Integration tests use a fake GitHub transport to cover creation, hierarchy, assignments, lost responses and partial-failure recovery. Live GitHub creation requires the user's reviewed export action.
