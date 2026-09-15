@@ -1,5 +1,5 @@
 import type { ApiResult } from '../types'
-import type { BriefInputs, DocumentResult, ProjectBrief, TeamBrief } from './briefTypes'
+import type { BriefInputs, DocumentResult, ProjectBrief, TeamBrief, TaskGraphResult } from './briefTypes'
 
 export class ApiFailure extends Error {
   constructor(public code: string, message: string, public retryable: boolean) { super(message) }
@@ -32,6 +32,7 @@ async function brief<T>(kind: 'team' | 'project', inputs: BriefInputs, signal?: 
 }
 
 export const api = {
+  taskGraph: (project_md: string, team_md: string, team_size: number, signal?: AbortSignal) => call<TaskGraphResult>('/task-graph', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ project_md, team_md, team_size }), signal }),
   health: () => call<{ mockMode: boolean; hasKey: boolean }>('/health', { method: 'GET' }),
   team: (inputs: BriefInputs, signal?: AbortSignal) => brief<TeamBrief>('team', inputs, signal),
   project: (inputs: BriefInputs, signal?: AbortSignal) => brief<ProjectBrief>('project', inputs, signal),

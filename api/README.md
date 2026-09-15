@@ -80,7 +80,7 @@ Create a browser download from `markdown`, or submit a native form to `POST /api
 - Assets over 20 MB use Gemini Files API with cleanup after the request; cleanup failures appear in warnings. Application inputs/results remain in memory. Gemini is an external processor.
 - Edit `app/prompts/common.md`, `team.md`, and `project.md` to iterate on output. Structured output is validated and rendered as Markdown in code.
 - Person claims reference CV evidence. Text quotations and ownership are checked locally; image/PDF transcription still depends on Gemini. Conservative coverage checks can mark unsupported scores unconfirmed. These checks do not guarantee perfect model interpretation.
-- Project output covers idea, deliverables, constraints, and open questions. Tasks, schedules, and assignments belong to a later stage.
+- Project output covers idea, deliverables, constraints, and open questions. Task graph generation is available through the endpoint below. Named assignments belong to a later stage.
 
 ## Optional live smoke test
 
@@ -89,3 +89,23 @@ uv run python scripts/smoke_briefs.py --live
 ```
 
 Consumes Gemini quota using fictional mixed-format CVs and a thin project description. Checks both documents, at least eight project questions, and the 60-second target. Ordinary pytest tests need no credentials or live model calls. Do not commit real CVs or generated personal profiles as fixtures.
+
+## Task flow — POST /api/task-graph
+
+After generating both briefs, send JSON:
+
+```json
+{"project_md":"# Project…", "team_md":"# Team…", "team_size":2}
+```
+
+`team_size` is the actual count from the generated team document (2–8), avoiding a separate counting call. Both documents must be non-empty and at most 1,000,000 characters each; request limit is 8 MB.
+
+Returns the normal envelope with `data.graph` (`nodes` and `edges`), flat `data.tasks`, `team_size`, `rounds`, `ms`, and `validation`. Each node has integer `id`, `label`, `title` (plain-text task description), `group`, `estimated_time_hours`, and `people_needed`. Edges run `from` the prerequisite to the dependent task `to`.
+
+The app runs the planner with MEDIUM thinking. The planner uses Gemini, validates the graph, and may request two corrections (three attempts total). Each SDK call has a 60-second timeout and no automatic retries. The synchronous package runs in a worker thread so the server remains responsive. Client connections close after planning. A browser cancellation stops waiting but a running worker may finish its bounded attempts. No graph or source documents are persisted.
+
+Invalid requests return 400, exhausted invalid graphs 422, model failures 502, and rate limits 429, using the existing error envelope. The UI clears the dependent graph when an input brief changes or is regenerated.
+
+Validation covers graph structure, cycles, references, positive estimates, headcount capacity, and a simulated utilisation threshold. Duration and utilisation are estimates; skill feasibility and stated deadlines are considered by the prompt but are not mechanically proven. `people_needed` is a headcount, not a named assignment.
+
+Only `api/app/task_planner/` was imported from `taskparser` (source commit `5e702e3`), with integration fixes for bounded calls, malformed outputs, and hackathon-sized estimates. Its other adapters, files, and dependency suggestions were not imported. The app uses its own router and native React/SVG graph UI; optional PyVis rendering in the standalone package is not used or installed.

@@ -1,23 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client'
-import type { BriefInputs, Output, ProjectBrief, TeamBrief } from '../api/briefTypes'
+import type { BriefInputs, Output, ProjectBrief, TeamBrief, TaskGraphResult } from '../api/briefTypes'
 
 const empty = (): BriefInputs => ({ setup: { name: '', context: '', constraints: '' }, members: [1, 2].map(i => ({ id: `m${i}`, label: '', text: '' })), projectText: '', projectFiles: [] })
 export function useBriefs() {
   const [inputs, setInputs] = useState<BriefInputs>(empty)
   const [team, setTeam] = useState<Output<TeamBrief>>({ busy: false })
   const [project, setProject] = useState<Output<ProjectBrief>>({ busy: false })
-  const requests = useRef<Partial<Record<'team' | 'project', AbortController>>>({})
+  const [flow, setFlow] = useState<{ result?: TaskGraphResult; busy: boolean; error?: string }>({ busy: false })
+  const requests = useRef<Partial<Record<'team' | 'project' | 'flow', AbortController>>>({})
   useEffect(() => () => { Object.values(requests.current).forEach(c => c?.abort()) }, [])
-  const busy = team.busy || project.busy
+  const busy = team.busy || project.busy || flow.busy
   function update(patch: Partial<BriefInputs>) {
     if (busy) return
+    setFlow({ busy: false })
     setInputs(current => ({ ...current, ...patch }))
     if (patch.setup || patch.members) setTeam({ busy: false })
     if (patch.setup || patch.projectText !== undefined || patch.projectFiles) setProject({ busy: false })
   }
   async function generate(kind: 'team' | 'project') {
-    if (requests.current[kind]) return
+    if (requests.current[kind] || requests.current.flow) return
+    setFlow({ busy: false })
     const controller = new AbortController()
     requests.current[kind] = controller
     const setOutput = kind === 'team' ? setTeam : setProject
@@ -34,11 +37,23 @@ export function useBriefs() {
       if (!controller.signal.aborted) setOutput({ busy: false, error: error instanceof Error ? error.message : 'Generation failed. Please retry.' })
     } finally { if (requests.current[kind] === controller) delete requests.current[kind] }
   }
+  async function generateFlow() {
+    if (busy || requests.current.flow || !team.document || !project.document) return
+    const controller = new AbortController()
+    requests.current.flow = controller
+    setFlow({ busy: true })
+    try {
+      const result = await api.taskGraph(project.document.markdown, team.document.markdown, team.document.structured.members.length, controller.signal)
+      if (!controller.signal.aborted) setFlow({ busy: false, result })
+    } catch (error) {
+      if (!controller.signal.aborted) setFlow({ busy: false, error: error instanceof Error ? error.message : 'Task planning failed. Please retry.' })
+    } finally { if (requests.current.flow === controller) delete requests.current.flow }
+  }
   function reset() {
     Object.values(requests.current).forEach(c => c?.abort())
     requests.current = {}
-    setInputs(empty()); setTeam({ busy: false }); setProject({ busy: false })
+    setFlow({ busy: false }); setInputs(empty()); setTeam({ busy: false }); setProject({ busy: false })
   }
-  return { inputs, update, team, project, generate, busy, reset }
+  return { inputs, update, team, project, flow, generate, generateFlow, busy, reset }
 }
 export type BriefSession = ReturnType<typeof useBriefs>
