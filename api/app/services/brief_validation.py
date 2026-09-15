@@ -57,13 +57,20 @@ def validate_team(team: TeamBrief, request: BriefInput, sources: list[Source]) -
                     invalid("A quoted passage could not be found in its CV text. Please retry or inspect the original file.")
             elif item.source_part not in {a.location for a in source.assets if a.mime != "text/plain"}:
                 invalid("A CV citation referred to a missing image or document part. Please retry.")
-        claims = [member.cv_name, *member.roles, *member.strengths, *member.stack, member.experience, *member.working_style]
+        claims = [member.github, member.cv_name, *member.roles, *member.strengths, *member.stack, member.experience, *member.working_style]
         for claim in claims:
             if claim.text == "not stated":
                 if claim.evidence_ids:
                     invalid("An unknown personal detail carried a misleading citation.")
             elif not claim.evidence_ids or any(ref not in evidence for ref in claim.evidence_ids):
                 invalid("A personal claim was missing valid CV evidence. Please retry.")
+        if member.github.text != "not stated":
+            username = member.github.text
+            quotes = " ".join(evidence[ref].quote for ref in member.github.evidence_ids)
+            # A personal profile URL, not an organization/project repository link.
+            profile = r"(?<![\w./-])(?:https?://)?(?:www\.)?github\.com/" + re.escape(username) + r"/?(?=$|[\s),;<>])"
+            if not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?", username) or not re.search(profile, quotes, re.I):
+                invalid("A GitHub username was not supported by a personal profile URL in its CV citation.")
         # Names and individual tool labels must occur in their quoted CV evidence,
         # not merely attach an unrelated, otherwise valid quote to a new skill.
         for exact in [member.cv_name, *member.stack]:

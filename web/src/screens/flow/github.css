@@ -1,0 +1,28 @@
+.github-export { margin-top:32px; padding:28px; border:1px solid #dfe3dc; border-radius:18px; background:#fff; }
+.github-export header { display:flex; justify-content:space-between; gap:20px; align-items:start; }
+.github-export h3 { display:flex; align-items:center; gap:10px; font-size:23px; margin:8px 0; }
+.github-export h4 { margin:0 0 10px; font-size:15px; }
+.github-export p { color:#666d64; font-size:13px; line-height:1.6; }
+.github-count { font-size:12px; background:#edf3ed; padding:8px 12px; border-radius:20px; white-space:nowrap; }
+.github-setup { display:grid; grid-template-columns:1fr 1fr; gap:32px; margin:28px 0; }
+.github-profile { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #edf0e9; padding:13px 0; font-size:13px; }
+.github-profile small { display:block; font-size:11px; color:#727b6e; margin-top:4px; }
+.github-profile>div { display:flex; gap:6px; align-items:center; max-width:48%; }
+.github-export input { width:100%; min-width:0; padding:10px 12px; border:1px solid #d4dacf; border-radius:7px; font:inherit; background:#fbfcf9; box-sizing:border-box; }
+.github-destination label { display:block; font-size:12px; margin-bottom:14px; }
+.github-destination input { display:block; margin-top:6px; }
+.github-export a { color:#315d4d; font-size:13px; display:inline-flex; align-items:center; gap:4px; }
+.github-guidance,.github-error { padding:12px 16px; background:#f8f4e9; border-radius:8px; }
+.github-error { color:#923d31!important; }
+.github-preview { margin-top:24px; padding-top:24px; border-top:1px solid #e4e8df; }
+.github-preview details { border:1px solid #e4e8df; border-radius:8px; margin:8px 0; padding:13px; }
+.github-preview summary { cursor:pointer; font-size:13px; }
+.github-preview summary span { display:block; color:#667161; font-size:12px; margin-top:4px; }
+.github-preview pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; line-height:1.7; padding:14px; background:#f6f8f2; }
+.github-preview>.button { margin-top:18px; }
+.github-result { padding:20px; background:#eef5ed; border-radius:10px; margin-top:20px; }
+.flow-owner-options { display:grid; gap:9px; margin-top:12px; }
+.flow-owner-options label { display:flex; gap:8px; font-size:12px; align-items:center; }
+.flow-owner-options small { color:#73806d; display:block; }
+.flow-owner-names { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px; font-size:10px; }
+@media(max-width:750px) { .github-setup {grid-template-columns:1fr; gap:24px;} .github-export {padding:18px;} .github-export header {flex-direction:column;} }
