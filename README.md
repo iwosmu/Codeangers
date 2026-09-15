@@ -1,119 +1,110 @@
-# Codeangers — team planner
+# TaskPilot
 
-Add project material and CVs for 2–8 people. Generate two evidence-backed Markdown briefs, a dependency graph, and suggested task owners. When a skill has no direct CV evidence, review a suggested contributor with related experience and a first learning step.
+### From project brief to clear ownership.
 
-## Stack
+TaskPilot helps a newly formed team answer **what are we building, who can help, and what needs to happen first?** Give it a project brief and the team's CVs; it produces shared Markdown briefs, a dependency graph, evidence-backed owner suggestions, and a reviewed GitHub issue export.
 
-- `api/` — FastAPI + Pydantic v2, Gemini via `google-genai`
-- `web/` — Vite + React + TypeScript
-- `fixtures/` — the mock data every part of the system develops against
+Built by **Codeangers** at the **Google Student AI Hackathon in Warsaw · 15 September 2026**. This repository is now a record of the completed hackathon prototype and the work behind it.
 
-## Run it
+**[Watch the demo · 2:45](https://www.youtube.com/watch?v=rPXVT3FQx7k)** · **[Pitch deck · PDF](docs/submission/TaskPilot-presentation.pdf)** · [Canva presentation](https://canva.link/288wybtg4tkh9az) · [Live app](https://codeangers-web.onrender.com/) · [Submission snapshot](https://github.com/iwosmu/Codeangers/tree/iwosmu/hackathon-submission-2026-09-15)
 
-Two terminals.
+[![TaskPilot dependency graph and task inspector](docs/media/taskpilot-graph.png)](https://www.youtube.com/watch?v=rPXVT3FQx7k)
 
-```bash
-# terminal 1 — API on :8000
+*The working graph view from the demo. The chart loads first; people matching follows on the same page.*
+
+## Why we built it
+
+The first hours of a project often disappear into coordination. The idea exists in slightly different versions in everyone's head, nobody has read everyone else's CV, and deciding who should do what becomes guesswork.
+
+Our starting user was a student meeting a hackathon team for the first time and trying to get building that evening. The same kickoff problem could apply to university projects, student organisations, or corporate innovation days. Those broader uses were pitch directions, not validated customer outcomes.
+
+The idea was simple: **AI recommends. Your team decides.**
+
+## What the prototype does
+
+1. **Understand the project.** Accept a description, constraints, and optional material such as a Markdown PRD, PDF, slides, whiteboard photo, or audio note. Produce `project.md` with deliverables, context, success criteria, and open questions.
+2. **Understand the team.** Accept mixed-format CVs or pasted text for **2–8 people**. Produce `team.md`, individual profiles, and a coverage map with references to CV evidence. Missing information stays “not stated.”
+3. **Build the task flow.** Generate tasks and their prerequisites, then validate the dependency graph. Zoom, pan, change orientation, and inspect the work that can proceed in parallel.
+4. **Suggest owners in the graph.** Show direct matches, related experience that needs learning, and unconfirmed fit. When expertise is missing, expose the gap and suggest a contributor with relevant transferable evidence and a first learning step. People can review and edit assignments.
+5. **Put the reviewed plan into GitHub.** Confirm teammate accounts and a repository, preview the issues, then create one parent issue with assigned sub-issues and prerequisite links.
+
+[![Real GitHub issue with assignees, prerequisites, and parent relationship](docs/media/taskpilot-github.png)](https://github.com/iwosmu/Codeangers/issues/12)
+
+**The demo used TaskPilot itself as a new project, plus our five-person team's CVs.** It produced [parent issue #4](https://github.com/iwosmu/Codeangers/issues/4) and 15 assigned sub-issues. These issues are historical demo output, not a current implementation backlog.
+
+## Submission and project history
+
+| Material | Where to find it |
+| --- | --- |
+| Final demo, including GitHub results | [YouTube · 2:45](https://www.youtube.com/watch?v=rPXVT3FQx7k) · [Exact 4K MP4](https://github.com/iwosmu/Codeangers/raw/refs/heads/iwosmu/hackathon-submission-2026-09-15/docs/submission/TaskPilot-demo-4K-smooth.mp4) |
+| Submitted six-slide presentation | [Original PDF](docs/submission/TaskPilot-presentation.pdf) · [Canva](https://canva.link/288wybtg4tkh9az) |
+| Original two-minute demo backup | [Exact 4K MP4](https://github.com/iwosmu/Codeangers/raw/refs/heads/iwosmu/hackathon-submission-2026-09-15/docs/submission/TaskPilot-demo-4K-original.mp4) |
+| Frozen submission source and assets | [`iwosmu/hackathon-submission-2026-09-15`](https://github.com/iwosmu/Codeangers/tree/iwosmu/hackathon-submission-2026-09-15) |
+| Source commit used for the demo | [`66c0daf`](https://github.com/iwosmu/Codeangers/tree/66c0dafa0361e98ca7d2f381abbf07104efd3e3a) |
+| Original demo project brief | [PRD](demo/project-prd.md) |
+| Artifact provenance and checksums | [Submission archive](docs/submission/README.md) |
+| Frozen GitHub export | [16-issue JSON snapshot](docs/submission/github-issues.json) |
+
+The submission branch preserves the application and original root README before this retrospective. The PDF and both videos are unchanged copies, with SHA-256 checksums. The final demo uses real Gemini results replayed from memory with shortened waits; it is a product walkthrough, not a latency benchmark. The live Render deployment may sleep or become unavailable, so the video and archived assets are the lasting reference.
+
+## How it works
+
+```mermaid
+flowchart LR
+    P[Project material + setup] --> PB[Gemini project brief]
+    C[CVs + setup] --> TB[Gemini team brief]
+    PB --> PM[project.md]
+    TB --> TM[team.md + evidence]
+    PM --> G[Validated task graph]
+    TM --> G
+    G --> A[Owner matching + schedule checks]
+    TM --> A
+    A --> R[Human review in the graph]
+    R --> GH[GitHub parent + assigned sub-issues]
+```
+
+- **Frontend:** React, TypeScript, Vite, and a custom SVG graph interface.
+- **Backend:** FastAPI and Pydantic, with Gemini through `google-genai`.
+- **Generation:** separate project and team calls, structured JSON validation, Markdown rendering in code, followed by graph and assignment stages.
+- **Multimodal input:** Gemini handles PDF, image, and audio content; DOCX/PPTX handling extracts text and raster images. Large assets use the Gemini Files API with cleanup.
+- **State:** application inputs and generated results live in request/browser-session memory. GitHub is an explicit export destination.
+
+See [development and architecture notes](docs/DEVELOPMENT.md), [API documentation](api/README.md), and the [recording workflow](demo/README.md).
+
+## Retrospective
+
+We did not win the hackathon. We did build an end-to-end prototype that connected multimodal intake, shared briefs, dependency planning, skill matching, and a real GitHub export in one workflow.
+
+**What was worth keeping:** evidence references made suggestions inspectable; independent generation stages made iteration easier; putting owner matching directly into the graph kept the plan and the people together; a real issue export gave the demo a concrete endpoint.
+
+**What needs more work:** CVs are incomplete descriptions of people, and semantic skill matching can still be wrong. “Closest skillset” is a reviewable suggestion, not a measured prediction of learning speed. Time estimates assume availability and omit learning time. The prototype has no persistent shared workspace, and the pitch's faster-kickoff claims were not measured in a user study.
+
+If revisited, the next useful work would be a small kickoff study with real teams, explicit availability and preferred-role inputs, stronger evaluation of adjacent-skill matches, and better handling of project changes after the first plan.
+
+## Team Codeangers
+
+[Jagoda Flejmer](https://github.com/jFlamer) · [Krzysztof Grabowski](https://github.com/krzysztofgrabowski1410) · [Okan Ozkan](https://github.com/the0kan) · [Mateusz Feczan](https://github.com/MattNattFeczan) · [Iwo Smura](https://github.com/iwosmu)
+
+## Run locally
+
+Requires Python 3.12+, `uv`, Node.js, npm, and a Gemini API key. From the repository root:
+
+```sh
+cp .env.example .env.local
+# Set GEMINI_API_KEY in .env.local. Never commit that file.
 cd api
-copy ..\.env.example ..\.env    # then put your key in it
+uv sync --locked
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-`uv run` creates `.venv`, installs from `uv.lock` and fetches Python 3.12 if you do
-not have it — no venv to activate, no `pip install`, and everyone gets byte-identical
-versions. Install uv once: `winget install --id astral-sh.uv` (or `pip install uv`).
+In another terminal:
 
-| Instead of | Use |
-|---|---|
-| `pip install X` | `uv add X` — writes `pyproject.toml` and `uv.lock`, commit both |
-| `pip install -r requirements.txt` | `uv sync` |
-| `pytest` | `uv run pytest` |
-| activating the venv | nothing — prefix the command with `uv run` |
-
-`uv.lock` is committed on purpose. Never edit it by hand; never install into the
-API's venv with pip, or your machine stops matching everyone else's.
-
-```bash
-# terminal 2 — web on :5173, proxies /api to :8000
+```sh
 cd web
-npm install
+npm ci
 npm run dev
 ```
 
-Open http://localhost:5173. The current brief, graph and assignment endpoints use Gemini; they do not substitute mock responses. Set `GEMINI_API_KEY` (or `GEMINI_KEY`) in the repository's `.env.local`. Inputs and outputs stay in the browser/request session, with no application persistence.
+Open `http://localhost:5173`. The configured hackathon model is `gemini-3.8-flash`; `GEMINI_MODEL` can be changed in `.env.local` to a model available to your account. Current model availability and hosting are not guaranteed by this archive.
 
-## Who owns what
-
-| | Lane | Paths |
-|---|---|---|
-| **A** | frontend — shell | `web/src/app/**`, `web/src/screens/setup/**`, `web/src/api/**`, `web/src/components/ui/**` |
-| **B** | frontend — plan | `web/src/screens/plan/**`, `web/src/components/timeline/**` |
-| **C** | project setup + planning | `api/app/services/ai_project.py`, `api/app/services/ai_plan.py` |
-| **D** | CV + task graph + validation | `api/app/services/ai_cv.py`, `api/app/services/ai_tasks.py`, `api/app/services/validate.py`, `web/src/lib/validate.ts` |
-| **E** | API backend | `api/app/main.py`, `api/app/routers/**`, `api/app/envelope.py`, `api/app/config.py`, deploy |
-| — | **shared** | `api/app/schemas.py`, `web/src/types.ts`, `fixtures/*.json` — announce before changing |
-
-`api/app/schemas.py` and `web/src/types.ts` are the same contract in two languages.
-They must be edited together, in one commit, and announced out loud.
-
-## API
-
-| Method | Path | Body | Returns |
-|---|---|---|---|
-| `GET` | `/api/health` | — | Connection/model status |
-| `POST` | `/api/briefs/project` | multipart project text/files and setup | Structured brief + `project.md` |
-| `POST` | `/api/briefs/team` | multipart CVs and setup | CV evidence + `team.md` |
-| `POST` | `/api/task-graph` | `{ project_md, team_md, team_size }` | Validated graph and flat tasks |
-| `POST` | `/api/task-assignments` | `{ team: TeamBrief, tasks }` | Owners by member ID, ordered task lists, skill fit, schedule validation |
-| `POST` | `/api/github/preview` | Reviewed repository, profiles, tasks; token header | Issue preview |
-| `POST` | `/api/github/export` | Same reviewed snapshot; token header | Parent issue and assigned sub-issues |
-
-Every response is an envelope:
-
-```json
-{ "ok": true,  "data": {}, "warnings": [], "meta": { "ms": 12, "mocked": true, "cacheHit": false } }
-{ "ok": false, "error": { "code": "rate_limited", "message": "...", "retryable": true } }
-```
-
-## Deploy (Render)
-
-`render.yaml` defines both services. In Render: **New → Blueprint**, point it at this
-repo, and set `GEMINI_API_KEY` when it asks. Two URLs come out:
-
-| Service | What it is | URL |
-|---|---|---|
-| `codeangers-web` | static site, always on, free | what you demo and share |
-| `codeangers-api` | FastAPI, free plan | only the static site talks to it |
-
-The static site rewrites `/api/*` to the API service, so the browser only ever sees
-one origin — no CORS, and no API URL baked into the bundle.
-
-**The free plan sleeps after 15 minutes idle and cold-starts in roughly a minute.**
-That is a dead minute in front of judges. Before the pitch, open the site once and
-wait for it to answer, then leave the tab open. Do not find this out on stage.
-
-## Assignment integration
-
-`api/app/task_assigner/` is integrated from `task-assigner` commit `6c86e81`; no other frontend or backend from that branch is imported. Its schedule simulator checks task coverage, headcounts, agreeing task/member views, dependency order and deadlocks. Application requests allow unavoidable idle capacity and report it rather than forcing unsupported skill matches.
-
-The graph appears first, then owner suggestions run automatically. Assignment can be retried independently. Suggested owners feed the existing editable owner controls and reviewed GitHub export; nothing is published automatically.
-
-Graph generation handles deliverables and technical prerequisites. Shared specialists are scheduled by the subsequent owner-assignment call, so skill overlap does not create artificial dependency edges. Application graph generation reports idle capacity as a warning instead of rejecting a valid graph at an arbitrary utilization threshold; cycles, missing dependencies and excessive per-task headcounts remain errors.
-
-- **Direct match:** evidence for all required skills.
-- **Closest skillset · learning needed:** relevant CV evidence, explicit missing skills and a concrete first learning step.
-- **Fit unconfirmed:** insufficient relevant evidence to rank learning fit; a proposed owner needs team confirmation.
-
-Task cards mark learning/review cases. The sidebar shows the reason, missing skills and original CV quotations. Assignment controls, task order, team-wide skill gaps and match explanations live in the selected-task sidebar; there is no separate assignment stage. Manual owner changes invalidate the displayed fit/schedule status; original suggestions remain available for comparison. Recalculating replaces owner suggestions. Duration assumes continuous availability and excludes learning time.
-
-Prompts: `api/app/task_assigner/prompts.py` (assignment and scheduling), `api/app/prompts/assignment_fit.md` (evidence and learning-gap policy). The model compares semantic skill fit; code verifies member/task IDs, evidence references and consistent fit labels. Returned explanations use literal CV excerpts instead of unchecked model narratives that could incorrectly connect a separately listed tool to a project. The fit classification remains a suggestion to review with the team.
-
-No dependencies added. Model calls use the configured Gemini model, a 60-second timeout per attempt, and at most one repair in the application. Tests: `cd api && uv run pytest`; `npm --prefix web test`; `npm --prefix web run build`.
-
-## Consolidated frontend design
-
-The interface applies the visual system from `new_desing` (`a75ac77`) to the working frontend on `main`: connected progress navigation, monochrome surfaces, project guidance, team coverage, and profile review. Project context/constraints, multimodal attachments, 2–8 member inputs, pasted CVs, Markdown views/downloads, evidence disclosures, and the reviewed GitHub export are retained. Graph node dimensions, layout, dependency routing, zoom/pan, orientation, focus mode and ownership controls remain from `main`; graph changes are visual only. The design branch's demo fallbacks and legacy API calls are not used.
-
-## Demo recording
-
-See [demo/README.md](demo/README.md) for the real-project, real-CV Playwright recording workflow. Validated responses stay in process memory; only the requested video and stills are saved in the ignored output directory. The app itself has no demo-result cache.
+Raw CVs, credentials, and private team conversations are not part of the repository.

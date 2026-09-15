@@ -55,8 +55,8 @@ const browser=await chromium.launch({headless:true})
 console.log('READY — enter record to capture, or quit. Cached results never touch disk.')
 for await(const line of commands) {
   if(line.trim()==='quit') break
-  if(line.trim()!=='record') continue
-  try { const {record}=await import(`./record-flow.mjs?run=${Date.now()}`); await record({browser,cache,files,prdPath,setup,description,origin,team,flow,assignment}) }
+  if(!['record','record-github'].includes(line.trim())) continue
+  try { const {record}=await import(`./record-flow.mjs?run=${Date.now()}`); await record({browser,cache,files,prdPath,setup,description,origin,team,flow,assignment,includeGithub:line.trim()==='record-github'}) }
   catch(error){console.error('Recording failed:',error.message)}
   console.log('READY — record again or quit.')
 }
