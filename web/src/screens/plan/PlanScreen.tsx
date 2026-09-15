@@ -1,18 +1,41 @@
-import { FileText, GitBranch, Info, Upload, Users } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { api, ApiFailure } from '../../api/client'
-import { Button, Card, Warnings } from '../../components/ui'
-import type { AppState, Assignment, Warning } from '../../types'
+import { Users } from 'lucide-react'
+import { Button, Card, Field } from '../../components/ui'
+import { BriefDocument } from '../../components/BriefDocument'
+import { SourceUploads, CV_ACCEPT } from '../../components/SourceUploads'
+import type { BriefSession } from '../../state/briefs'
+import type { MemberInput } from '../../api/briefTypes'
 
-export function PlanScreen({ state, patch, locks }: { state: AppState; patch: (p: Partial<AppState>) => void; locks: () => Assignment[] }) {
-  const [busy, setBusy] = useState<'tasks' | 'plan' | null>(null); const [uploading, setUploading] = useState(false); const [error, setError] = useState<Warning[]>([]); const inputRef = useRef<HTMLInputElement>(null)
-  const ready = Boolean(state.project && state.people.length)
-  async function generateTasks() { if (!state.project) return; setBusy('tasks'); setError([]); try { patch({ graph: await api.tasks(state.project) }) } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setBusy(null) } }
-  async function generatePlan() { if (!state.project || !state.graph) return; setBusy('plan'); setError([]); try { patch({ plan: await api.plan({ project: state.project, graph: state.graph, people: state.people }, locks()) }) } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setBusy(null) } }
-  async function upload(file?: File) { if (!file) return; setUploading(true); setError([]); try { const person = await api.cv({ file, name: file.name.replace(/\.[^.]+$/, '') }); patch({ people: [...state.people, person] }) } catch (e) { const f = e as ApiFailure; setError([{ code: f.code, severity: 'error', message: f.message }]) } finally { setUploading(false); if (inputRef.current) inputRef.current.value = '' } }
-  const sectionName = (id: string) => state.project?.sections.find(s => s.id === id)?.name ?? id
-  return <main id="main-content" className="screen screen-flow"><div className="screen-heading"><div><p className="eyebrow">02 · Task flow</p><h2>See what can happen in parallel.</h2><p>Generate a dependency-aware task graph, then create a plan only when the team is ready.</p></div></div>
-    <div className="stack"><Card title="Build the team" right={<span className="pill"><Users size={13} aria-hidden="true" /> {state.people.length} added</span>}><div className="dropzone"><Upload size={22} color="var(--accent)" aria-hidden="true" /><p className="dropzone-title">Add a teammate’s CV</p><p className="dropzone-text">Upload one PDF at a time. Then generate the task flow below.</p><input ref={inputRef} id="cv-file" type="file" accept="application/pdf,.pdf" hidden onChange={e => upload(e.target.files?.[0])} /><label className="button button-secondary" htmlFor="cv-file" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><FileText size={16} aria-hidden="true" />{uploading ? 'Reading CV…' : 'Choose PDF'}</label></div><div className="grid-three" style={{ marginTop: 14 }}>{state.people.map(person => <article className="person-card" key={person.id}><div className="person-top"><div className="avatar">{person.name.slice(0, 1).toUpperCase()}</div><div><strong>{person.name}</strong><div className="subtle">{person.source === 'cv' ? 'CV analysed' : 'Added manually'}</div></div></div><div className="skill-tags">{person.skills.slice(0, 3).map(skill => <span className="skill-tag" key={skill.label}>{skill.label} · {skill.level}/5</span>)}</div></article>)}</div></Card><Card title="Generate the work map" right={state.graph && <span className="pill">{state.graph.tasks.length} tasks</span>}><div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}><div><strong>Task graph</strong><p className="subtle" style={{ margin: '3px 0 0' }}>Dependencies are shown below each task. Tasks without predecessors can start together.</p></div><Button onClick={generateTasks} disabled={!ready || busy !== null}>{busy === 'tasks' ? 'Generating tasks…' : 'Generate task flow'}</Button></div>{!ready && <div className="notice" style={{ marginTop: 14 }}><Info size={17} aria-hidden="true" />Add at least one team member here before generating tasks.</div>}</Card>
-      {state.graph ? <Card title="Dependency map" right={<span className="subtle"><GitBranch size={14} aria-hidden="true" style={{ verticalAlign: 'middle' }} /> parallel-ready view</span>}><div className="task-grid">{state.graph.tasks.map(task => <article className={`task-card ${task.kind}`} key={task.id}><div className="task-meta"><span className="pill">{sectionName(task.sectionId)}</span><span>{task.blocks * 30} min</span></div><h4>{task.title}</h4><div className="task-meta"><span>{task.kind}</span><span className="mono">{task.id}</span></div><div className="dependency">{task.dependsOn.length ? <>Waits for: <strong>{task.dependsOn.join(', ')}</strong></> : <span style={{ color: 'var(--success)' }}>Can start immediately</span>}</div></article>)}</div></Card> : <div className="empty"><div><GitBranch size={28} aria-hidden="true" /><strong style={{ display: 'block' }}>Your task flow will appear here</strong><span className="subtle">Generate tasks to see dependencies and parallel work.</span></div></div>}
-      <Card title="Create the assignment plan" right={state.plan && <span className="pill">Plan ready</span>}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}><div><strong>Human decisions stay protected.</strong><p className="subtle" style={{ margin: '3px 0 0' }}>{locks().length ? `${locks().length} manually locked assignment(s) will be preserved.` : state.people.length ? 'Manual changes made on the assignment screen are kept on re-plan.' : 'Add at least one CV before creating an assignment plan.'}</p></div><Button onClick={generatePlan} disabled={!state.graph || !state.people.length || busy !== null}>{busy === 'plan' ? 'Planning…' : state.plan ? 'Re-plan with locks' : 'Generate plan'}</Button></div></Card><Warnings items={error} /></div></main>
+export function PlanScreen({ session }: { session: BriefSession }) {
+  const { inputs, update, team, project, busy, generate } = session
+  function resize(count: number) {
+    const members = inputs.members.slice(0, count)
+    while (members.length < count) members.push({ id: `m${members.length + 1}`, label: '', text: '' })
+    update({ members })
+  }
+  function changeMember(index: number, patch: Partial<MemberInput>) { update({ members: inputs.members.map((m, i) => i === index ? { ...m, ...patch } : m) }) }
+  function batch(files: File[]) {
+    const members = inputs.members.map(m => ({ ...m }))
+    for (const file of files) {
+      const empty = members.find(m => !m.file && !m.text.trim())
+      if (empty) empty.file = file
+      else members.push({ id: `m${members.length + 1}`, label: '', text: '', file })
+    }
+    update({ members })
+  }
+  const occupied = inputs.members.filter(m => m.file || m.text.trim()).length
+  const ready = occupied === inputs.members.length
+  return <main id="main-content" className="screen screen-flow"><div className="screen-heading"><div><p className="eyebrow">02 · Team overview</p><h2>Know who brings what.</h2><p>Add the CVs, then review the evidence behind each person's strengths, likely roles, and team coverage.</p></div></div>
+    <div className="stack"><Card title="Build the team" right={<span className="pill"><Users size={13} aria-hidden="true" /> {occupied}/{inputs.members.length} ready</span>}>
+      <fieldset disabled={busy} className="input-group"><label className="field team-size"><span className="field-label">Team size</span><select className="select" value={inputs.members.length} onChange={e => resize(Number(e.target.value))}>{[2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} people</option>)}</select></label>
+        {occupied < 8 && <SourceUploads files={[]} onChange={batch} max={8 - occupied} accept={CV_ACCEPT} title="Add CVs in a batch" help="PDF, DOCX, image, TXT or MD. One file per person; team size expands automatically." disabled={busy} />}
+        <div className="grid-three">{inputs.members.map((member, i) => <article className="person-card" key={member.id}><div className="person-top"><div className="avatar">{i + 1}</div><strong>Member {i + 1}</strong></div>
+          <div className="input-group"><Field label={`Member ${i + 1} name (optional)`} value={member.label} onChange={label => changeMember(i, { label })} />
+            <SourceUploads files={member.file ? [member.file] : []} onChange={files => changeMember(i, { file: files[0] })} max={1} accept={CV_ACCEPT} title={`CV for member ${i + 1}`} help="Upload a CV or paste the text below." disabled={busy} />
+            <Field label={`Member ${i + 1} CV text`} rows={3} value={member.text} onChange={text => changeMember(i, { text })} placeholder="Paste CV text…" />
+            <Button kind="ghost" disabled={inputs.members.length <= 2} onClick={() => update({ members: inputs.members.filter((_, index) => index !== i).map((m, index) => ({ ...m, id: `m${index + 1}` })) })}>Remove member {i + 1}</Button>
+          </div></article>)}</div>
+      </fieldset><div className="document-actions"><Button disabled={!ready || team.busy} onClick={() => void generate('team')}>{team.busy ? 'Reading team CVs…' : 'Generate team.md'}</Button>
+      <Button kind="secondary" disabled={!ready || busy || !(inputs.projectText.trim() || inputs.projectFiles.length)} onClick={() => { void generate('team'); void generate('project') }}>Generate both documents</Button><span className="subtle">{project.busy ? 'project.md is also generating.' : 'Every person needs a CV file or pasted text.'}</span></div>
+    </Card><BriefDocument output={team} kind="team" /></div>
+  </main>
 }

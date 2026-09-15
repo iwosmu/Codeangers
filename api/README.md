@@ -1,6 +1,6 @@
 # Team Work Splitter API
 
-CVs and project material produce `team.md` and `project.md`, plus validated JSON for the future overview UI. This backend release does not include the new frontend. Legacy project/CV/task/plan routes are no longer mounted; integrate against the endpoints below.
+CVs and project material produce `team.md` and `project.md`, plus validated JSON for the future overview UI. The TaskPilot frontend uses these endpoints. Legacy project/CV/task/plan routes are no longer mounted.
 
 ## Run
 

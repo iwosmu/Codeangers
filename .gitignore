@@ -25,3 +25,6 @@ Thumbs.db
 
 # runtime
 api/.cache/
+
+# Generated TypeScript build metadata
+*.tsbuildinfo

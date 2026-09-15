@@ -1,97 +1,71 @@
-# Codeangers — team planner
+# TaskPilot / Team Work Splitter
 
-Paste a project brief and five CVs, get sections, a task graph with dependencies,
-and a plan that keeps everyone unblocked at the same time. Gemini does the
-planning; the code only checks the result.
+Upload a team's CVs and project material to generate **team.md** and **project.md**. The TaskPilot frontend from the `frontend` branch now uses the Gemini brief backend on `main`.
 
-## Stack
+## Run
 
-- `api/` — FastAPI + Pydantic v2, Gemini via `google-genai`
-- `web/` — Vite + React + TypeScript
-- `fixtures/` — the mock data every part of the system develops against
+Keep the Gemini key in `.env.local` at the repository root:
 
-## Run it
+```dotenv
+GEMINI_API_KEY=your_key
+GEMINI_MODEL=gemini-3.8-flash
+```
 
-Two terminals.
+`GEMINI_KEY` and `GOOGLE_API_KEY` are also accepted. Do not put credentials in frontend environment variables.
 
-```bash
-# terminal 1 — API on :8000
+Backend (Python 3.12+, uv):
+
+```sh
 cd api
-copy ..\.env.example ..\.env    # then put your key in it
-uv run uvicorn app.main:app --reload --port 8000
+uv sync --locked
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-`uv run` creates `.venv`, installs from `uv.lock` and fetches Python 3.12 if you do
-not have it — no venv to activate, no `pip install`, and everyone gets byte-identical
-versions. Install uv once: `winget install --id astral-sh.uv` (or `pip install uv`).
+Frontend (Node.js, npm), in another terminal:
 
-| Instead of | Use |
-|---|---|
-| `pip install X` | `uv add X` — writes `pyproject.toml` and `uv.lock`, commit both |
-| `pip install -r requirements.txt` | `uv sync` |
-| `pytest` | `uv run pytest` |
-| activating the venv | nothing — prefix the command with `uv run` |
-
-`uv.lock` is committed on purpose. Never edit it by hand; never install into the
-API's venv with pip, or your machine stops matching everyone else's.
-
-```bash
-# terminal 2 — web on :5173, proxies /api to :8000
+```sh
 cd web
-npm install
-npm run dev
+npm ci
+npm run dev -- --host 127.0.0.1
 ```
 
-Open http://localhost:5173 . With `MOCK_ONLY=true` (the default) every endpoint
-answers from `fixtures/`, so the whole app works before a single prompt exists.
+Open http://127.0.0.1:5173. Vite proxies `/api` to port 8000.
 
-## Mock mode
+## Workflow
 
-| How | Effect |
-|---|---|
-| `MOCK_ONLY=true` in `.env` | every endpoint answers from `fixtures/` |
-| header `x-mock: 1` on one request | that request answers from `fixtures/` |
-| `meta.mocked` in the response | tells the frontend which one it got |
+1. **Project brief:** add text or attach a Markdown PRD, PDF, Office file, note image, or audio. Add shared setup and generate `project.md`. Attachments work without a textbox description.
+2. **Team overview:** choose 2–8 people, upload CVs individually or in a batch, or paste CV text. Generate `team.md`, or generate both documents concurrently.
+3. **Review & download:** inspect the coverage table and expand cells for source evidence. Read and download both Markdown documents. Each result appears independently as soon as it is ready.
 
-Frontend work never blocks on backend work. That is the point.
+The UI keeps TaskPilot's wizard and visual components. It uses real API results, reports failures, and does not substitute demo profiles. Input changes invalidate the affected document. Clear session removes in-memory inputs and outputs and cancels pending browser requests. No localStorage, sessionStorage, or application database is used for CVs/results.
 
-## Who owns what
+Task graphs, schedules, and assignments are future stages. Their generation is not available in this version. Validated structured data accompanies each Markdown document for that later integration.
 
-| | Lane | Paths |
-|---|---|---|
-| **A** | frontend — shell | `web/src/app/**`, `web/src/screens/setup/**`, `web/src/api/**`, `web/src/components/ui/**` |
-| **B** | frontend — plan | `web/src/screens/plan/**`, `web/src/components/timeline/**` |
-| **C** | project setup + planning | `api/app/services/ai_project.py`, `api/app/services/ai_plan.py` |
-| **D** | CV + task graph + validation | `api/app/services/ai_cv.py`, `api/app/services/ai_tasks.py`, `api/app/services/validate.py`, `web/src/lib/validate.ts` |
-| **E** | API backend | `api/app/main.py`, `api/app/routers/**`, `api/app/envelope.py`, `api/app/config.py`, deploy |
-| — | **shared** | `api/app/schemas.py`, `web/src/types.ts`, `fixtures/*.json` — announce before changing |
+## Implementation
 
-`api/app/schemas.py` and `web/src/types.ts` are the same contract in two languages.
-They must be edited together, in one commit, and announced out loud.
+- `api/app/prompts/`: common rules and independently editable team/project prompts.
+- `api/app/brief_schemas.py`: structured output contract.
+- `api/app/routers/briefs.py`: independent multipart ingestion endpoints.
+- `web/src/api/client.ts`: typed API transport, including per-document errors.
+- `web/src/state/briefs.ts`: session inputs, independent requests, cancellation, invalidation.
+- `web/src/screens/`: TaskPilot project, team, and review screens.
+- `web/src/components/BriefDocument.tsx`: Markdown preview and native download forms.
 
-## API
+See [the API contract](api/README.md) for request/response fields, upload limits, supported formats, and evidence limitations. CV evidence comes from the supplied sources; PDF/image transcription and interpretation still require human review.
 
-| Method | Path | Body | Returns |
-|---|---|---|---|
-| `GET` | `/api/health` | — | `{ model, mockMode, commit }` |
-| `POST` | `/api/project` | `{ brief, horizonHours, teamSize }` | `ProjectModel` |
-| `POST` | `/api/cv` | multipart: `file` (pdf) or `text`, plus `name` | `PersonProfile` |
-| `POST` | `/api/tasks` | `{ project }` | `TaskGraph` |
-| `POST` | `/api/plan` | `{ project, people, graph, locks }` | `Plan` |
+## Verify
 
-Every response is an envelope:
-
-```json
-{ "ok": true,  "data": {}, "warnings": [], "meta": { "ms": 12, "mocked": true, "cacheHit": false } }
-{ "ok": false, "error": { "code": "rate_limited", "message": "...", "retryable": true } }
+```sh
+cd api
+uv run pytest -q
+cd ../web
+npm test
+npm run build
 ```
 
-## Rules
+An optional live smoke test uses only fictional CVs and consumes Gemini quota:
 
-1. A drag in the UI never calls the model. Local edit + `validate.ts`, instant.
-   Only the **Re-plan** button calls `POST /api/plan`.
-2. `temperature=0` and cache every model response keyed on an input hash. The plan
-   you rehearsed must be the plan that appears on stage.
-3. One repair round when the validator finds errors, then give up and let the user
-   fix it by hand. Never loop.
-4. The Gemini key lives in `api/.env` only. Never in `web/`, never in a response, never in git.
+```sh
+cd api
+uv run python scripts/smoke_briefs.py --live
+```
